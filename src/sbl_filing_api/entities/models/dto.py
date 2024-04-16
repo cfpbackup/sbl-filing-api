@@ -85,7 +85,7 @@ class FilingDTO(BaseModel):
     filing_period: str
     lei: str
     tasks: List[FilingTaskProgressDTO] | None = Field(None, deprecated=True)
-    institution_snapshot_id: str
+    institution_snapshot_id: str | None = None
     contact_info: ContactInfoDTO | None = None
     confirmation_id: str | None = None
     signatures: List[SignatureDTO] = []
