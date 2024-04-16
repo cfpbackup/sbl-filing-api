@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Dict, Any, List
 from pydantic import BaseModel, ConfigDict, Field
-from sbl_filing_api.entities.models.model_enums import FilingType, FilingTaskState, SubmissionState
+from sbl_filing_api.entities.models.model_enums import FilingType, FilingTaskState, SubmissionState, UserActionType
 
 
 class SubmitterDTO(BaseModel):
@@ -112,3 +112,11 @@ class StateUpdateDTO(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     state: FilingTaskState
+
+
+class UserActionDTO(BaseModel):
+    user_id: str
+    user_name: str
+    user_email: str
+    timestamp: datetime
+    action_type: UserActionType

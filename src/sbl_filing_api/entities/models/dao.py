@@ -1,4 +1,4 @@
-from sbl_filing_api.entities.models.model_enums import FilingType, FilingTaskState, SubmissionState
+from sbl_filing_api.entities.models.model_enums import FilingType, FilingTaskState, SubmissionState, UserActionType
 from datetime import datetime
 from typing import Any, List
 from sqlalchemy import Enum as SAEnum, String
@@ -132,6 +132,15 @@ class FilingDAO(Base):
 
     def __str__(self):
         return f"ID: {self.id}, Filing Period: {self.filing_period}, LEI: {self.lei}, Tasks: {self.tasks}, Institution Snapshot ID: {self.institution_snapshot_id}, Contact Info: {self.contact_info}"
+
+
+class UserAction(Base):
+    __tablename__ = "user_action"
+    user_id: Mapped[str]
+    user_name: Mapped[str]
+    user_email: Mapped[str]
+    timestamp: Mapped[datetime] = mapped_column(server_default=func.now())
+    action_type: Mapped[UserActionType] = mapped_column(SAEnum(UserActionType))
 
 
 # Commenting out for now since we're just storing the results from the data-validator as JSON.
