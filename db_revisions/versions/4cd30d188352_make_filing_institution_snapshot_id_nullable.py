@@ -9,7 +9,6 @@ Create Date: 2024-04-16 09:33:16.055484
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
@@ -20,8 +19,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    pass
+    with op.batch_alter_table("filing", schema=None) as batch_op:
+        batch_op.alter_column("institution_snapshot_id", existing_nullable=False, nullable=True)
 
 
 def downgrade() -> None:
-    pass
+    with op.batch_alter_table("filing", schema=None) as batch_op:
+        batch_op.alter_column("institution_snapshot_id", existing_nullable=True, nullable=False)
