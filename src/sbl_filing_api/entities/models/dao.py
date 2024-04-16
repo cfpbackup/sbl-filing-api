@@ -12,7 +12,18 @@ class Base(AsyncAttrs, DeclarativeBase):
     pass
 
 
-class SubmitterDAO(Base):
+class UserActionDAO(Base):
+    __tablename__ = "user_action"
+    user_id: Mapped[str]
+    user_name: Mapped[str]
+    user_email: Mapped[str]
+    timestamp: Mapped[datetime] = mapped_column(server_default=func.now())
+    action_type: Mapped[UserActionType] = mapped_column(SAEnum(UserActionType))
+    filing: Mapped[int] = mapped_column(ForeignKey("filing.id"))
+    submission: Mapped[int] = mapped_column(ForeignKey("submission.id"))
+
+
+"""class SubmitterDAO(Base):
     __tablename__ = "submitter"
     id: Mapped[int] = mapped_column(index=True, primary_key=True, autoincrement=True)
     submission: Mapped[int] = mapped_column(ForeignKey("submission.id"))
@@ -32,14 +43,15 @@ class AccepterDAO(Base):
 
     def __str__(self):
         return f"Acception ID: {self.id}, Accepter: {self.accepter}, Accepter Name: {self.accepter_name}, Accepter Email: {self.accepter_email}, Submission: {self.submission} Acception: {self.acception_time}"
+"""
 
 
 class SubmissionDAO(Base):
     __tablename__ = "submission"
     id: Mapped[int] = mapped_column(index=True, primary_key=True, autoincrement=True)
     filing: Mapped[int] = mapped_column(ForeignKey("filing.id"))
-    submitter: Mapped[SubmitterDAO] = relationship("SubmitterDAO", lazy="joined")
-    accepter: Mapped[AccepterDAO] = relationship("AccepterDAO", lazy="joined")
+    submitter: Mapped[UserActionDAO] = relationship("UserActionDAO", lazy="joined")
+    accepter: Mapped[UserActionDAO] = relationship("UserActionDAO", lazy="joined")
     state: Mapped[SubmissionState] = mapped_column(SAEnum(SubmissionState))
     validation_ruleset_version: Mapped[str] = mapped_column(nullable=True)
     validation_json: Mapped[List[dict[str, Any]]] = mapped_column(JSON, nullable=True)
@@ -104,7 +116,7 @@ class ContactInfoDAO(Base):
         return f"ContactInfo ID: {self.id}, First Name: {self.first_name}, Last Name: {self.last_name}, Address Street 1: {self.hq_address_street_1}, Address Street 2: {self.hq_address_street_2}, Address City: {self.hq_address_city}, Address State: {self.hq_address_state}, Address Zip: {self.hq_address_zip}"
 
 
-class SignatureDAO(Base):
+"""class SignatureDAO(Base):
     __tablename__ = "signature"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     signer_id: Mapped[str]
@@ -117,6 +129,7 @@ class SignatureDAO(Base):
 
     def __str__(self):
         return f"ID: {self.id}, Filing: {self.filing}, Signer ID: {self.signer_id}, Signer Name: {self.signer_name}, Signing Date: {self.signed_date}"
+"""
 
 
 class FilingDAO(Base):
@@ -127,20 +140,11 @@ class FilingDAO(Base):
     tasks: Mapped[List[FilingTaskProgressDAO] | None] = relationship(lazy="selectin", cascade="all, delete-orphan")
     institution_snapshot_id: Mapped[str]
     contact_info: Mapped[ContactInfoDAO] = relationship("ContactInfoDAO", lazy="joined")
-    signatures: Mapped[List[SignatureDAO] | None] = relationship("SignatureDAO", lazy="selectin")
+    signatures: Mapped[List[UserActionDAO] | None] = relationship("UserActionDAO", lazy="selectin")
     confirmation_id: Mapped[str] = mapped_column(nullable=True)
 
     def __str__(self):
         return f"ID: {self.id}, Filing Period: {self.filing_period}, LEI: {self.lei}, Tasks: {self.tasks}, Institution Snapshot ID: {self.institution_snapshot_id}, Contact Info: {self.contact_info}"
-
-
-class UserAction(Base):
-    __tablename__ = "user_action"
-    user_id: Mapped[str]
-    user_name: Mapped[str]
-    user_email: Mapped[str]
-    timestamp: Mapped[datetime] = mapped_column(server_default=func.now())
-    action_type: Mapped[UserActionType] = mapped_column(SAEnum(UserActionType))
 
 
 # Commenting out for now since we're just storing the results from the data-validator as JSON.
