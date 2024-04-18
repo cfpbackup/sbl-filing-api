@@ -110,6 +110,14 @@ class TestFilingApi:
         assert res.status_code == 403
 
     async def test_get_submissions(self, mocker: MockerFixture, app_fixture: FastAPI, authed_user_mock: Mock):
+        user_action_submit = UserActionDAO(
+            id=2,
+            user_id="123456-7890-ABCDEF-GHIJ",
+            user_name="test submitter",
+            user_email="test@local.host",
+            action_type=UserActionType.SUBMIT,
+            timestamp=datetime.datetime.now(),
+        )
         mock = mocker.patch("sbl_filing_api.entities.repos.submission_repo.get_submissions")
         mock.return_value = [
             SubmissionDAO(
@@ -118,6 +126,8 @@ class TestFilingApi:
                 validation_ruleset_version="v1",
                 submission_time=datetime.datetime.now(),
                 filename="file1.csv",
+                submitter_id=2,
+                submitter=user_action_submit,
             )
         ]
 
@@ -146,6 +156,14 @@ class TestFilingApi:
         assert res.status_code == 403
 
     async def test_get_latest_submission(self, mocker: MockerFixture, app_fixture: FastAPI, authed_user_mock: Mock):
+        user_action_submit = UserActionDAO(
+            id=2,
+            user_id="123456-7890-ABCDEF-GHIJ",
+            user_name="test submitter",
+            user_email="test@local.host",
+            action_type=UserActionType.SUBMIT,
+            timestamp=datetime.datetime.now(),
+        )
         mock = mocker.patch("sbl_filing_api.entities.repos.submission_repo.get_latest_submission")
         mock.return_value = SubmissionDAO(
             filing=1,
@@ -153,6 +171,8 @@ class TestFilingApi:
             validation_ruleset_version="v1",
             submission_time=datetime.datetime.now(),
             filename="file1.csv",
+            submitter_id=2,
+            submitter=user_action_submit,
         )
 
         client = TestClient(app_fixture)
@@ -175,6 +195,14 @@ class TestFilingApi:
         assert res.status_code == 403
 
     async def test_get_submission_by_id(self, mocker: MockerFixture, app_fixture: FastAPI, authed_user_mock: Mock):
+        user_action_submit = UserActionDAO(
+            id=2,
+            user_id="123456-7890-ABCDEF-GHIJ",
+            user_name="test submitter",
+            user_email="test@local.host",
+            action_type=UserActionType.SUBMIT,
+            timestamp=datetime.datetime.now(),
+        )
         mock = mocker.patch("sbl_filing_api.entities.repos.submission_repo.get_submission")
         mock.return_value = SubmissionDAO(
             id=1,
@@ -183,6 +211,8 @@ class TestFilingApi:
             validation_ruleset_version="v1",
             submission_time=datetime.datetime.now(),
             filename="file1.csv",
+            submitter_id=2,
+            submitter=user_action_submit,
         )
 
         client = TestClient(app_fixture)
@@ -203,12 +233,22 @@ class TestFilingApi:
         submission_csv: str,
         get_filing_mock: Mock,
     ):
+        user_action_submit = UserActionDAO(
+            id=1,
+            user_id="123456-7890-ABCDEF-GHIJ",
+            user_name="test submitter",
+            user_email="test@local.host",
+            action_type=UserActionType.SUBMIT,
+            timestamp=datetime.datetime.now(),
+        )
+
         return_sub = SubmissionDAO(
             id=1,
             filing=1,
             state=SubmissionState.SUBMISSION_UPLOADED,
             filename="submission.csv",
-            submitter=1,
+            submitter_id=1,
+            submitter=user_action_submit,
         )
 
         mock_validate_file = mocker.patch("sbl_filing_api.services.submission_processor.validate_file_processable")
@@ -227,24 +267,22 @@ class TestFilingApi:
             "sbl_filing_api.entities.repos.submission_repo.update_submission", side_effect=async_mock
         )
         mock_add_submitter = mocker.patch("sbl_filing_api.entities.repos.submission_repo.add_user_action")
-        mock_add_submitter.return_value = UserActionDAO(
-            id=1,
-            user_id="123456-7890-ABCDEF-GHIJ",
-            user_name="test",
-            user_email="test@local.host",
-            action_type=UserActionType.SUBMIT,
-        )
+        mock_add_submitter.return_value = user_action_submit
 
         files = {"file": ("submission.csv", open(submission_csv, "rb"))}
         client = TestClient(app_fixture)
 
         res = client.post("/v1/filing/institutions/1234567890/filings/2024/submissions", files=files)
-        mock_add_submission.assert_called_with(ANY, 1, "submission.csv", 1)
+        mock_add_submission.assert_called_with(ANY, 1, "submission.csv", user_action_submit)
         assert mock_update_submission.call_args.args[0].state == SubmissionState.SUBMISSION_UPLOADED
         assert res.status_code == 200
         assert res.json()["id"] == 1
         assert res.json()["state"] == SubmissionState.SUBMISSION_UPLOADED
-        assert res.json()["submitter"] == 1
+        assert res.json()["submitter"]["id"] == 1
+        assert res.json()["submitter"]["user_id"] == "123456-7890-ABCDEF-GHIJ"
+        assert res.json()["submitter"]["user_name"] == "test submitter"
+        assert res.json()["submitter"]["user_email"] == "test@local.host"
+        assert res.json()["submitter"]["action_type"] == UserActionType.SUBMIT
 
         get_filing_mock.return_value = None
         res = client.post("/v1/filing/institutions/ABCDEFG/filings/2024/submissions", files=files)
@@ -559,6 +597,23 @@ class TestFilingApi:
         )
 
     async def test_accept_submission(self, mocker: MockerFixture, app_fixture: FastAPI, authed_user_mock: Mock):
+        user_action_submit = UserActionDAO(
+            id=2,
+            user_id="123456-7890-ABCDEF-GHIJ",
+            user_name="test submitter",
+            user_email="test@local.host",
+            action_type=UserActionType.SUBMIT,
+            timestamp=datetime.datetime.now(),
+        )
+
+        user_action_accept = UserActionDAO(
+            id=3,
+            user_id="1234-5678-ABCD-EFGH",
+            user_name="test accepter",
+            user_email="test@local.host",
+            action_type=UserActionType.ACCEPT,
+            timestamp=datetime.datetime.now(),
+        )
         mock = mocker.patch("sbl_filing_api.entities.repos.submission_repo.get_submission")
         mock.return_value = SubmissionDAO(
             id=1,
@@ -567,18 +622,12 @@ class TestFilingApi:
             validation_ruleset_version="v1",
             submission_time=datetime.datetime.now(),
             filename="file1.csv",
-            submitter=1,
+            submitter_id=2,
+            submitter=user_action_submit,
         )
 
         update_accepter_mock = mocker.patch("sbl_filing_api.entities.repos.submission_repo.add_user_action")
-        update_accepter_mock.return_value = UserActionDAO(
-            id=2,
-            user_id="123456-7890-ABCDEF-GHIJ",
-            user_name="test",
-            user_email="test@local.host",
-            action_type=UserActionType.ACCEPT,
-            timestamp=datetime.datetime.now(),
-        )
+        update_accepter_mock.return_value = user_action_accept
 
         update_mock = mocker.patch("sbl_filing_api.entities.repos.submission_repo.update_submission")
         update_mock.return_value = SubmissionDAO(
@@ -588,7 +637,10 @@ class TestFilingApi:
             validation_ruleset_version="v1",
             submission_time=datetime.datetime.now(),
             filename="file1.csv",
-            accepter=update_accepter_mock.return_value.id,
+            submitter_id=2,
+            submitter=user_action_submit,
+            accepter_id=update_accepter_mock.return_value.id,
+            accepter=update_accepter_mock.return_value,
         )
 
         client = TestClient(app_fixture)
@@ -612,7 +664,11 @@ class TestFilingApi:
 
         assert res.json()["state"] == "SUBMISSION_ACCEPTED"
         assert res.json()["id"] == 1
-        assert res.json()["accepter"] == 2
+        assert res.json()["accepter"]["id"] == 3
+        assert res.json()["accepter"]["user_id"] == "1234-5678-ABCD-EFGH"
+        assert res.json()["accepter"]["user_name"] == "test accepter"
+        assert res.json()["accepter"]["user_email"] == "test@local.host"
+        assert res.json()["accepter"]["action_type"] == UserActionType.ACCEPT
         assert res.status_code == 200
 
         mock.return_value = None

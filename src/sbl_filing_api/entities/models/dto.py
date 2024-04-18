@@ -22,8 +22,8 @@ class SubmissionDTO(BaseModel):
     validation_json: List[Dict[str, Any]] | None = None
     submission_time: datetime | None = None
     filename: str
-    submitter: int | None = None
-    accepter: int | None = None
+    submitter: UserActionDTO
+    accepter: UserActionDTO | None = None
 
 
 class FilingTaskDTO(BaseModel):

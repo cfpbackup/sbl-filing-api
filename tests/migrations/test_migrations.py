@@ -309,7 +309,7 @@ def test_migration_to_102fb94a24cc(alembic_runner: MigrationContext, alembic_eng
     assert "accepter" not in tables
     assert "submitter" not in tables
 
-    assert set(["id", "user_id", "user_name", "user_email", "action_type"]) == set(
+    assert set(["id", "user_id", "user_name", "user_email", "action_type", "timestamp"]) == set(
         [c["name"] for c in inspector.get_columns("user_action")]
     )
 

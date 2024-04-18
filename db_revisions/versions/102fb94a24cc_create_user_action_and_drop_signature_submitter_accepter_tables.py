@@ -35,6 +35,7 @@ def upgrade() -> None:
                 name="useractionstate",
             ),
         ),
+        sa.Column("timestamp", sa.DateTime(), server_default=sa.func.now(), nullable=False),
         sa.PrimaryKeyConstraint("id", name="user_action_pkey"),
     )
 

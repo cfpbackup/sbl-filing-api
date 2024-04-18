@@ -124,7 +124,7 @@ async def upload_file(
         action_type=UserActionType.SUBMIT,
     )
 
-    submission = await repo.add_submission(request.state.db_session, filing.id, file.filename, submitter.id)
+    submission = await repo.add_submission(request.state.db_session, filing.id, file.filename, submitter)
 
     submission = await repo.update_submission(submission)
     await submission_processor.upload_to_storage(period_code, lei, submission.id, content, file.filename.split(".")[-1])
@@ -187,7 +187,8 @@ async def accept_submission(request: Request, id: int, lei: str, period_code: st
         user_email=request.user.email,
         action_type=UserActionType.ACCEPT,
     )
-    submission.accepter = accepter.id
+
+    submission.accepter = accepter
     submission.state = SubmissionState.SUBMISSION_ACCEPTED
     submission = await repo.update_submission(submission, request.state.db_session)
     return submission

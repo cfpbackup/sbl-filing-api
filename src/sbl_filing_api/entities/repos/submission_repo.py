@@ -90,9 +90,11 @@ async def get_user_action(session: AsyncSession, id: int) -> UserActionDAO:
     return result[0] if result else None
 
 
-async def add_submission(session: AsyncSession, filing_id: int, filename: str, submitter_id: int) -> SubmissionDAO:
+async def add_submission(
+    session: AsyncSession, filing_id: int, filename: str, submitter: UserActionDAO
+) -> SubmissionDAO:
     new_sub = SubmissionDAO(
-        filing=filing_id, state=SubmissionState.SUBMISSION_STARTED, filename=filename, submitter=submitter_id
+        filing=filing_id, state=SubmissionState.SUBMISSION_STARTED, filename=filename, submitter=submitter
     )
     # this returns the attached object, most importantly with the new submission id
     new_sub = await session.merge(new_sub)
