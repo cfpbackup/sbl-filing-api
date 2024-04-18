@@ -36,15 +36,6 @@ async def validation_monitor(period_code: str, lei: str, submission: SubmissionD
         )
         submission.state = SubmissionState.VALIDATION_EXPIRED
         await update_submission(submission)
-    except Exception as e:
-        log.error(
-            f"Validation for submission {submission.id} did not complete due to an unexpected error.",
-            e,
-            exc_info=True,
-            stack_info=True,
-        )
-        submission.state = SubmissionState.VALIDATION_ERROR
-        await update_submission(submission)
 
 
 def validate_file_processable(file: UploadFile) -> None:
@@ -120,4 +111,14 @@ async def validate_and_update_submission(period_code: str, lei: str, submission:
     except RuntimeError as re:
         log.error("The file is malformed", re, exc_info=True, stack_info=True)
         submission.state = SubmissionState.SUBMISSION_UPLOAD_MALFORMED
+        await update_submission(submission)
+
+    except Exception as e:
+        log.error(
+            f"Validation for submission {submission.id} did not complete due to an unexpected error.",
+            e,
+            exc_info=True,
+            stack_info=True,
+        )
+        submission.state = SubmissionState.VALIDATION_ERROR
         await update_submission(submission)
