@@ -2008,7 +2008,7 @@ requests = "^2.31.0"
 type = "git"
 url = "https://github.com/cfpb/regtech-api-commons.git"
 reference = "HEAD"
-resolved_reference = "e8e7c96532f76fcf72b6d864834cdc07d0fbd037"
+resolved_reference = "e526c1ee2778c1f96a75d85ac9d22362da67dcb9"
 
 [[package]]
 name = "regtech-data-validator"

@@ -82,6 +82,34 @@ class TestSubmissionRepo:
         )
         transaction_session.add(filing_task1)
 
+        user_action1 = UserActionDAO(
+            id=1,
+            user_id="test@local.host",
+            user_name="signer name",
+            user_email="test@local.host",
+            action_type=UserActionType.SIGN,
+            timestamp=dt.now(),
+        )
+        user_action2 = UserActionDAO(
+            id=2,
+            user_id="test@local.host",
+            user_name="submitter name",
+            user_email="test@local.host",
+            action_type=UserActionType.SUBMIT,
+            timestamp=dt.now(),
+        )
+        user_action3 = UserActionDAO(
+            id=3,
+            user_id="test@local.host",
+            user_name="accepter name",
+            user_email="test@local.host",
+            action_type=UserActionType.ACCEPT,
+            timestamp=dt.now(),
+        )
+        transaction_session.add(user_action1)
+        transaction_session.add(user_action2)
+        transaction_session.add(user_action3)
+
         submission1 = SubmissionDAO(
             id=1,
             filing=1,
@@ -91,13 +119,14 @@ class TestSubmissionRepo:
             submission_time=dt.now(),
             filename="file1.csv",
         )
+
         submission2 = SubmissionDAO(
             id=2,
             filing=2,
             submitter_id=2,
             state=SubmissionState.SUBMISSION_UPLOADED,
             validation_ruleset_version="v1",
-            submission_time=(dt.now() - datetime.timedelta(seconds=1000)),
+            submission_time=(dt.now() - datetime.timedelta(seconds=200)),
             filename="file2.csv",
         )
         submission3 = SubmissionDAO(
@@ -109,10 +138,23 @@ class TestSubmissionRepo:
             submission_time=dt.now(),
             filename="file3.csv",
         )
+        submission4 = SubmissionDAO(
+            id=4,
+            filing=1,
+            state=SubmissionState.SUBMISSION_UPLOADED,
+            validation_ruleset_version="v1",
+            submission_time=(dt.now() - datetime.timedelta(seconds=400)),
+            filename="file4.csv",
+        )
+        submission1.submitter = user_action2
+        submission2.submitter = user_action2
+        submission3.submitter = user_action2
+        submission4.submitter = user_action2
 
         transaction_session.add(submission1)
         transaction_session.add(submission2)
         transaction_session.add(submission3)
+        transaction_session.add(submission4)
 
         contact_info1 = ContactInfoDAO(
             id=1,
@@ -146,34 +188,6 @@ class TestSubmissionRepo:
         )
         transaction_session.add(contact_info1)
         transaction_session.add(contact_info2)
-
-        user_action1 = UserActionDAO(
-            id=1,
-            user_id="test@local.host",
-            user_name="signer name",
-            user_email="test@local.host",
-            action_type=UserActionType.SIGN,
-            timestamp=dt.now(),
-        )
-        user_action2 = UserActionDAO(
-            id=2,
-            user_id="test@local.host",
-            user_name="submitter name",
-            user_email="test@local.host",
-            action_type=UserActionType.SUBMIT,
-            timestamp=dt.now(),
-        )
-        user_action3 = UserActionDAO(
-            id=3,
-            user_id="test@local.host",
-            user_name="accepter name",
-            user_email="test@local.host",
-            action_type=UserActionType.ACCEPT,
-            timestamp=dt.now(),
-        )
-        transaction_session.add(user_action1)
-        transaction_session.add(user_action2)
-        transaction_session.add(user_action3)
 
         await transaction_session.commit()
 
@@ -329,8 +343,8 @@ class TestSubmissionRepo:
 
     async def test_get_submissions(self, query_session: AsyncSession):
         res = await repo.get_submissions(query_session)
-        assert len(res) == 3
-        assert {1, 2, 3} == set([s.id for s in res])
+        assert len(res) == 4
+        assert {1, 2, 3, 4} == set([s.id for s in res])
         assert res[1].filing == 2
         assert res[2].state == SubmissionState.SUBMISSION_UPLOADED
 
@@ -356,7 +370,7 @@ class TestSubmissionRepo:
         res = await repo.add_submission(
             transaction_session, filing_id=1, filename="file1.csv", submitter=user_action_submit
         )
-        assert res.id == 4
+        assert res.id == 5
         assert res.filing == 1
         assert res.state == SubmissionState.SUBMISSION_STARTED
         assert res.submitter.id == 2
@@ -384,9 +398,9 @@ class TestSubmissionRepo:
 
         async def query_updated_dao():
             async with session_generator() as search_session:
-                stmt = select(SubmissionDAO).filter(SubmissionDAO.id == 4)
+                stmt = select(SubmissionDAO).filter(SubmissionDAO.id == 5)
                 new_res1 = await search_session.scalar(stmt)
-                assert new_res1.id == 4
+                assert new_res1.id == 5
                 assert new_res1.filing == 1
                 assert new_res1.state == SubmissionState.VALIDATION_IN_PROGRESS
 
@@ -401,9 +415,9 @@ class TestSubmissionRepo:
 
         async def query_updated_dao():
             async with session_generator() as search_session:
-                stmt = select(SubmissionDAO).filter(SubmissionDAO.id == 4)
+                stmt = select(SubmissionDAO).filter(SubmissionDAO.id == 5)
                 new_res2 = await search_session.scalar(stmt)
-                assert new_res2.id == 4
+                assert new_res2.id == 5
                 assert new_res2.filing == 1
                 assert new_res2.state == SubmissionState.VALIDATION_WITH_ERRORS
                 assert new_res2.validation_json == validation_json

@@ -297,6 +297,10 @@ def test_migration_to_ccc50ec18a7e(alembic_runner: MigrationContext, alembic_eng
     alembic_runner.migrate_up_to("ccc50ec18a7e")
 
 
+def test_migration_to_0040045eae14(alembic_runner: MigrationContext, alembic_engine: Engine):
+    alembic_runner.migrate_up_to("0040045eae14")
+
+
 def test_migration_to_102fb94a24cc(alembic_runner: MigrationContext, alembic_engine: Engine):
     alembic_runner.migrate_up_to("102fb94a24cc")
 
