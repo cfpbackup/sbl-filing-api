@@ -59,7 +59,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-
     op.create_table(
         "submitter",
         sa.Column("id", sa.INTEGER, autoincrement=True),
