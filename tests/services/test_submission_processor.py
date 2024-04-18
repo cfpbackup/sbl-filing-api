@@ -253,3 +253,13 @@ class TestSubmissionProcessor:
             exc_info=True,
             stack_info=True,
         )
+
+        validate_patch.side_effect = KeyError("None of ['validation_id', 'record_no', 'field_name'] are in the columns")
+        await submission_processor.validation_monitor("2024", "1234TESTLEI000000001", mock_sub, b"\x00\x00")
+        assert update_sub_patch.mock_calls[0].args[0].state == SubmissionState.VALIDATION_ERROR
+        assert log_patch.mock_calls[0].warn.assert_called_with(
+            "Validation for submission 1 did not complete due to an unexpected error.",
+            ANY,
+            exc_info=True,
+            stack_info=True,
+        )
