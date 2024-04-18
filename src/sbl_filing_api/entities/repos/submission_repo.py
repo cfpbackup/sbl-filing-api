@@ -13,7 +13,6 @@ from async_lru import alru_cache
 
 from sbl_filing_api.entities.models.dao import (
     SubmissionDAO,
-    SubmissionState,
     FilingPeriodDAO,
     FilingDAO,
     FilingTaskDAO,
@@ -25,6 +24,7 @@ from sbl_filing_api.entities.models.dao import (
     SubmitterDAO,
 )
 from sbl_filing_api.entities.models.dto import FilingPeriodDTO, FilingDTO, ContactInfoDTO
+from sbl_filing_api.entities.models.model_enums import SubmissionState
 
 logger = logging.getLogger(__name__)
 

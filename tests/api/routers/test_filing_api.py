@@ -215,9 +215,7 @@ class TestFilingApi:
         mock_validate_file.return_value = None
         mock_upload = mocker.patch("sbl_filing_api.services.submission_processor.upload_to_storage")
         mock_upload.return_value = None
-        mock_validate_submission = mocker.patch(
-            "sbl_filing_api.services.submission_processor.validate_and_update_submission"
-        )
+        mock_validate_submission = mocker.patch("sbl_filing_api.services.submission_processor.validation_monitor")
         mock_validate_submission.return_value = None
         async_mock = AsyncMock(return_value=return_sub)
         mock_add_submission = mocker.patch(
@@ -240,6 +238,7 @@ class TestFilingApi:
 
         res = client.post("/v1/filing/institutions/1234567890/filings/2024/submissions", files=files)
         mock_add_submission.assert_called_with(ANY, 1, "submission.csv")
+        mock_validate_submission.assert_called_with("2024", "1234567890", return_sub, open(submission_csv, "rb").read())
         assert mock_update_submission.call_args.args[0].state == SubmissionState.SUBMISSION_UPLOADED
         assert res.status_code == 200
         assert res.json()["id"] == 1
@@ -279,6 +278,72 @@ class TestFilingApi:
         files = {"file": ("submission.csv", open(submission_csv, "rb"))}
         res = client.post("/v1/filing/institutions/1234567890/filings/2024/submissions", files=files)
         assert res.status_code == HTTPStatus.REQUEST_ENTITY_TOO_LARGE
+
+    def test_submission_update_fail(
+        self,
+        mocker: MockerFixture,
+        app_fixture: FastAPI,
+        authed_user_mock: Mock,
+        submission_csv: str,
+        get_filing_mock: Mock,
+    ):
+        return_sub = SubmissionDAO(
+            id=1,
+            filing=1,
+            state=SubmissionState.SUBMISSION_UPLOADED,
+            filename="submission.csv",
+        )
+
+        mock_logger = mocker.patch("sbl_filing_api.routers.filing.logger")
+
+        mock_validate_file = mocker.patch("sbl_filing_api.services.submission_processor.validate_file_processable")
+        mock_validate_file.return_value = None
+
+        async_mock = AsyncMock(return_value=return_sub)
+        mocker.patch("sbl_filing_api.entities.repos.submission_repo.add_submission", side_effect=async_mock)
+
+        mock_upload = mocker.patch("sbl_filing_api.services.submission_processor.upload_to_storage")
+        mock_upload.return_value = None
+        mock_validate_submission = mocker.patch("sbl_filing_api.services.submission_processor.validation_monitor")
+        mock_validate_submission.return_value = None
+
+        mock_update_submission = mocker.patch(
+            "sbl_filing_api.entities.repos.submission_repo.update_submission", side_effect=async_mock
+        )
+
+        mock_add_submitter = mocker.patch("sbl_filing_api.entities.repos.submission_repo.add_submitter")
+        mock_add_submitter.side_effect = RuntimeError("Failed to add submitter.")
+
+        file = {"file": ("submission.csv", open(submission_csv, "rb"))}
+        client = TestClient(app_fixture)
+
+        res = client.post("/v1/filing/institutions/1234567890/filings/2024/submissions", files=file)
+        mock_logger.mock_calls[0].error.assert_called_with(
+            "Error while trying to process Submission 1", RuntimeError, exec_info=True, stack_info=True
+        )
+        assert mock_update_submission.call_args.args[0].state == SubmissionState.UPLOAD_FAILED
+        assert res.status_code == 500
+        assert res.json() == "Failed to add submitter."
+
+        mock_add_submitter.side_effect = None
+        mock_add_submitter.return_value = SubmitterDAO(
+            id=1,
+            submission=1,
+            submitter="123456-7890-ABCDEF-GHIJ",
+            submitter_name="test",
+            submitter_email="test@local.host",
+        )
+
+        mock_upload.side_effect = HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="Failed to upload file"
+        )
+        res = client.post("/v1/filing/institutions/1234567890/filings/2024/submissions", files=file)
+        mock_logger.mock_calls[0].error.assert_called_with(
+            "Error while trying to process Submission 1", RuntimeError, exec_info=True, stack_info=True
+        )
+        assert mock_update_submission.call_args.args[0].state == SubmissionState.UPLOAD_FAILED
+        assert res.status_code == 500
+        assert res.json() == "500: Failed to upload file"
 
     async def test_unauthed_patch_filing(self, app_fixture: FastAPI):
         client = TestClient(app_fixture)
@@ -778,6 +843,7 @@ class TestFilingApi:
         assert res.status_code == 200
         assert res.text == "Test"
         assert res.headers["content-type"] == "text/csv; charset=utf-8"
+        assert res.headers["content-disposition"] == 'attachment; filename="1_validation_report.csv"'
 
         sub_mock.return_value = []
         client = TestClient(app_fixture)
@@ -790,7 +856,7 @@ class TestFilingApi:
     async def test_get_sub_report(self, mocker: MockerFixture, app_fixture: FastAPI, authed_user_mock: Mock):
         sub_mock = mocker.patch("sbl_filing_api.entities.repos.submission_repo.get_submission")
         sub_mock.return_value = SubmissionDAO(
-            id=1,
+            id=2,
             submitter=SubmitterDAO(
                 id=1,
                 submission=1,
@@ -813,12 +879,13 @@ class TestFilingApi:
         file_mock.return_value = temp_file.name
 
         client = TestClient(app_fixture)
-        res = client.get("/v1/filing/institutions/1234567890/filings/2024/submissions/1/report")
-        sub_mock.assert_called_with(ANY, 1)
-        file_mock.assert_called_with("2024", "1234567890", "1" + submission_processor.REPORT_QUALIFIER)
+        res = client.get("/v1/filing/institutions/1234567890/filings/2024/submissions/2/report")
+        sub_mock.assert_called_with(ANY, 2)
+        file_mock.assert_called_with("2024", "1234567890", "2" + submission_processor.REPORT_QUALIFIER)
         assert res.status_code == 200
         assert res.text == "Test"
         assert res.headers["content-type"] == "text/csv; charset=utf-8"
+        assert res.headers["content-disposition"] == 'attachment; filename="2_validation_report.csv"'
 
         sub_mock.return_value = []
         client = TestClient(app_fixture)
