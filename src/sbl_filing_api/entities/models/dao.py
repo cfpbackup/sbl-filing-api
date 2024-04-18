@@ -14,44 +14,20 @@ class Base(AsyncAttrs, DeclarativeBase):
 
 class UserActionDAO(Base):
     __tablename__ = "user_action"
+    id: Mapped[int] = mapped_column(index=True, primary_key=True, autoincrement=True)
     user_id: Mapped[str]
     user_name: Mapped[str]
     user_email: Mapped[str]
-    timestamp: Mapped[datetime] = mapped_column(server_default=func.now())
     action_type: Mapped[UserActionType] = mapped_column(SAEnum(UserActionType))
-    filing: Mapped[int] = mapped_column(ForeignKey("filing.id"))
-    submission: Mapped[int] = mapped_column(ForeignKey("submission.id"))
-
-
-"""class SubmitterDAO(Base):
-    __tablename__ = "submitter"
-    id: Mapped[int] = mapped_column(index=True, primary_key=True, autoincrement=True)
-    submission: Mapped[int] = mapped_column(ForeignKey("submission.id"))
-    submitter: Mapped[str]
-    submitter_name: Mapped[str] = mapped_column(nullable=True)
-    submitter_email: Mapped[str]
-
-
-class AccepterDAO(Base):
-    __tablename__ = "accepter"
-    id: Mapped[int] = mapped_column(index=True, primary_key=True, autoincrement=True)
-    submission: Mapped[int] = mapped_column(ForeignKey("submission.id"))
-    accepter: Mapped[str] = mapped_column(nullable=True)
-    accepter_name: Mapped[str] = mapped_column(nullable=True)
-    accepter_email: Mapped[str]
-    acception_time: Mapped[datetime] = mapped_column(server_default=func.now())
-
-    def __str__(self):
-        return f"Acception ID: {self.id}, Accepter: {self.accepter}, Accepter Name: {self.accepter_name}, Accepter Email: {self.accepter_email}, Submission: {self.submission} Acception: {self.acception_time}"
-"""
+    timestamp: Mapped[datetime] = mapped_column(server_default=func.now())
 
 
 class SubmissionDAO(Base):
     __tablename__ = "submission"
     id: Mapped[int] = mapped_column(index=True, primary_key=True, autoincrement=True)
     filing: Mapped[int] = mapped_column(ForeignKey("filing.id"))
-    submitter: Mapped[UserActionDAO] = relationship("UserActionDAO", lazy="joined")
-    accepter: Mapped[UserActionDAO] = relationship("UserActionDAO", lazy="joined")
+    submitter: Mapped[int] = mapped_column(ForeignKey("user_action.id"))
+    accepter: Mapped[int] = mapped_column(ForeignKey("user_action.id"), nullable=True)
     state: Mapped[SubmissionState] = mapped_column(SAEnum(SubmissionState))
     validation_ruleset_version: Mapped[str] = mapped_column(nullable=True)
     validation_json: Mapped[List[dict[str, Any]]] = mapped_column(JSON, nullable=True)
@@ -116,20 +92,12 @@ class ContactInfoDAO(Base):
         return f"ContactInfo ID: {self.id}, First Name: {self.first_name}, Last Name: {self.last_name}, Address Street 1: {self.hq_address_street_1}, Address Street 2: {self.hq_address_street_2}, Address City: {self.hq_address_city}, Address State: {self.hq_address_state}, Address Zip: {self.hq_address_zip}"
 
 
-"""class SignatureDAO(Base):
-    __tablename__ = "signature"
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    signer_id: Mapped[str]
-    signer_name: Mapped[str] = mapped_column(
-        nullable=True
-    )  # Some users may not have populated keycloak first/last name
-    signer_email: Mapped[str]
-    signed_date: Mapped[datetime] = mapped_column(server_default=func.now())
-    filing: Mapped[int] = mapped_column(ForeignKey("filing.id"))
-
-    def __str__(self):
-        return f"ID: {self.id}, Filing: {self.filing}, Signer ID: {self.signer_id}, Signer Name: {self.signer_name}, Signing Date: {self.signed_date}"
-"""
+class FilingSignaturesDAO(Base):
+    __tablename__ = "filing_signatures"
+    user_action: Mapped[int] = mapped_column(
+        ForeignKey("user_action.id"), nullable=False, primary_key=True, unique=True
+    )
+    filing: Mapped[int] = mapped_column(ForeignKey("filing.id"), index=True, nullable=False)
 
 
 class FilingDAO(Base):
@@ -139,8 +107,11 @@ class FilingDAO(Base):
     lei: Mapped[str]
     tasks: Mapped[List[FilingTaskProgressDAO] | None] = relationship(lazy="selectin", cascade="all, delete-orphan")
     institution_snapshot_id: Mapped[str]
-    contact_info: Mapped[ContactInfoDAO] = relationship("ContactInfoDAO", lazy="joined")
-    signatures: Mapped[List[UserActionDAO] | None] = relationship("UserActionDAO", lazy="selectin")
+    contact_info: Mapped[ContactInfoDAO] = relationship("ContactInfoDAO", lazy="joined", cascade="all, delete-orphan")
+    signatures: Mapped[List[UserActionDAO] | None] = relationship(
+        "UserActionDAO",
+        secondary="filing_signatures",
+    )
     confirmation_id: Mapped[str] = mapped_column(nullable=True)
 
     def __str__(self):
