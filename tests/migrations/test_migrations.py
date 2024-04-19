@@ -303,3 +303,59 @@ def test_migration_to_0040045eae14(alembic_runner: MigrationContext, alembic_eng
 
 def test_migration_to_c89920be2e66(alembic_runner: MigrationContext, alembic_engine: Engine):
     alembic_runner.migrate_up_to("c89920be2e66")
+    
+def test_migration_to_102fb94a24cc(alembic_runner: MigrationContext, alembic_engine: Engine):
+    alembic_runner.migrate_up_to("102fb94a24cc")
+
+    inspector = sqlalchemy.inspect(alembic_engine)
+
+    tables = inspector.get_table_names()
+
+    assert "user_action" in tables
+    assert "signature" not in tables
+    assert "accepter" not in tables
+    assert "submitter" not in tables
+
+    assert set(["id", "user_id", "user_name", "user_email", "action_type", "timestamp"]) == set(
+        [c["name"] for c in inspector.get_columns("user_action")]
+    )
+
+    assert set(
+        [
+            "user_action",
+            "filing",
+        ]
+    ) == set([c["name"] for c in inspector.get_columns("filing_signatures")])
+
+    filing_sig_fks = inspector.get_foreign_keys("filing_signatures")
+    assert filing_sig_fks[0]["name"] == "filing_signatures_user_action_fkey"
+    assert filing_sig_fks[1]["name"] == "filing_signatures_filing_fkey"
+
+    assert (
+        "user_action" in filing_sig_fks[0]["constrained_columns"]
+        and "user_action" == filing_sig_fks[0]["referred_table"]
+        and "id" in filing_sig_fks[0]["referred_columns"]
+    )
+    assert (
+        "filing" in filing_sig_fks[1]["constrained_columns"]
+        and "filing" == filing_sig_fks[1]["referred_table"]
+        and "id" in filing_sig_fks[1]["referred_columns"]
+    )
+
+    assert "submitter" in [c["name"] for c in inspector.get_columns("submission")]
+    assert "accepter" in [c["name"] for c in inspector.get_columns("submission")]
+
+    submission_fks = inspector.get_foreign_keys("submission")
+    assert submission_fks[1]["name"] == "submission_submitter_fkey"
+    assert submission_fks[2]["name"] == "submission_accepter_fkey"
+
+    assert (
+        "submitter" in submission_fks[1]["constrained_columns"]
+        and "user_action" == submission_fks[1]["referred_table"]
+        and "id" in submission_fks[1]["referred_columns"]
+    )
+    assert (
+        "accepter" in submission_fks[2]["constrained_columns"]
+        and "user_action" == submission_fks[2]["referred_table"]
+        and "id" in submission_fks[2]["referred_columns"]
+    )
