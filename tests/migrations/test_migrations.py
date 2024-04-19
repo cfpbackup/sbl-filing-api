@@ -339,20 +339,20 @@ def test_migration_to_102fb94a24cc(alembic_runner: MigrationContext, alembic_eng
         and "id" in filing_sig_fks[1]["referred_columns"]
     )
 
-    assert "submitter" in [c["name"] for c in inspector.get_columns("submission")]
-    assert "accepter" in [c["name"] for c in inspector.get_columns("submission")]
+    assert "submitter_id" in [c["name"] for c in inspector.get_columns("submission")]
+    assert "accepter_id" in [c["name"] for c in inspector.get_columns("submission")]
 
     submission_fks = inspector.get_foreign_keys("submission")
     assert submission_fks[1]["name"] == "submission_submitter_fkey"
     assert submission_fks[2]["name"] == "submission_accepter_fkey"
 
     assert (
-        "submitter" in submission_fks[1]["constrained_columns"]
+        "submitter_id" in submission_fks[1]["constrained_columns"]
         and "user_action" == submission_fks[1]["referred_table"]
         and "id" in submission_fks[1]["referred_columns"]
     )
     assert (
-        "accepter" in submission_fks[2]["constrained_columns"]
+        "accepter_id" in submission_fks[2]["constrained_columns"]
         and "user_action" == submission_fks[2]["referred_table"]
         and "id" in submission_fks[2]["referred_columns"]
     )

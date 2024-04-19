@@ -271,7 +271,7 @@ class TestFilingApi:
         client = TestClient(app_fixture)
 
         res = client.post("/v1/filing/institutions/1234567890/filings/2024/submissions", files=files)
-        mock_add_submission.assert_called_with(ANY, 1, "submission.csv", user_action_submit)
+        mock_add_submission.assert_called_with(ANY, 1, "submission.csv", user_action_submit.id)
         mock_validate_submission.assert_called_with("2024", "1234567890", return_sub, open(submission_csv, "rb").read())
         assert mock_update_submission.call_args.args[0].state == SubmissionState.SUBMISSION_UPLOADED
         assert res.status_code == 200
@@ -356,7 +356,6 @@ class TestFilingApi:
         mock_logger.mock_calls[0].error.assert_called_with(
             "Error while trying to process Submission 1", RuntimeError, exec_info=True, stack_info=True
         )
-        assert mock_update_submission.call_args.args[0].state == SubmissionState.UPLOAD_FAILED
         assert res.status_code == 500
         assert res.json() == "Failed to add submitter."
 

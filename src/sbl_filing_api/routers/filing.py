@@ -125,8 +125,6 @@ async def upload_file(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content=f"There is no Filing for LEI {lei} in period {period_code}, unable to submit file.",
         )
-
-    submission = await repo.add_submission(request.state.db_session, filing.id, file.filename)
     try:
         submitter = await repo.add_user_action(
             request.state.db_session,
@@ -135,27 +133,34 @@ async def upload_file(
             user_email=request.user.email,
             action_type=UserActionType.SUBMIT,
         )
-        submission = await repo.add_submission(request.state.db_session, filing.id, file.filename, submitter)
-        submission.submitter = submitter
-        submission = await repo.update_submission(submission)
-        await submission_processor.upload_to_storage(
-            period_code, lei, submission.id, content, file.filename.split(".")[-1]
-        )
+        submission = await repo.add_submission(request.state.db_session, filing.id, file.filename, submitter.id)
+        try:
+            await submission_processor.upload_to_storage(
+                period_code, lei, submission.id, content, file.filename.split(".")[-1]
+            )
 
-        submission.state = SubmissionState.SUBMISSION_UPLOADED
-        submission = await repo.update_submission(submission)
+            submission.state = SubmissionState.SUBMISSION_UPLOADED
+            submission = await repo.update_submission(submission)
+        except Exception as e:
+            logger.error(
+                f"Error while trying to process Submission {submission.id}", e, exec_info=True, stack_info=True
+            )
+            submission.state = SubmissionState.UPLOAD_FAILED
+            submission = await repo.update_submission(submission)
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=f"{e}",
+            )
+        background_tasks.add_task(submission_processor.validation_monitor, period_code, lei, submission, content)
+
+        return submission
+
     except Exception as e:
-        logger.error(f"Error while trying to process Submission {submission.id}", e, exec_info=True, stack_info=True)
-        submission.state = SubmissionState.UPLOAD_FAILED
-        submission = await repo.update_submission(submission)
+        logger.error("Error while trying to process SUBMIT User Action", e, exec_info=True, stack_info=True)
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content=f"{e}",
         )
-
-    background_tasks.add_task(submission_processor.validation_monitor, period_code, lei, submission, content)
-
-    return submission
 
 
 @router.get("/institutions/{lei}/filings/{period_code}/submissions", response_model=List[SubmissionDTO])
@@ -208,7 +213,7 @@ async def accept_submission(request: Request, id: int, lei: str, period_code: st
         action_type=UserActionType.ACCEPT,
     )
 
-    submission.accepter = accepter
+    submission.accepter_id = accepter.id
     submission.state = SubmissionState.SUBMISSION_ACCEPTED
     submission = await repo.update_submission(submission, request.state.db_session)
     return submission

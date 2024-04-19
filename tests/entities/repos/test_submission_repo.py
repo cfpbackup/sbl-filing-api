@@ -113,7 +113,7 @@ class TestSubmissionRepo:
         submission1 = SubmissionDAO(
             id=1,
             filing=1,
-            submitter_id=1,
+            submitter_id=2,
             state=SubmissionState.SUBMISSION_UPLOADED,
             validation_ruleset_version="v1",
             submission_time=dt.now(),
@@ -132,7 +132,7 @@ class TestSubmissionRepo:
         submission3 = SubmissionDAO(
             id=3,
             filing=2,
-            submitter_id=3,
+            submitter_id=2,
             state=SubmissionState.SUBMISSION_UPLOADED,
             validation_ruleset_version="v1",
             submission_time=dt.now(),
@@ -359,24 +359,24 @@ class TestSubmissionRepo:
         assert len(res) == 0
 
     async def test_add_submission(self, transaction_session: AsyncSession):
-        user_action_submit = UserActionDAO(
-            id=2,
+        user_action_submit = await repo.add_user_action(
+            transaction_session,
             user_id="123456-7890-ABCDEF-GHIJ",
             user_name="test submitter",
             user_email="test@local.host",
             action_type=UserActionType.SUBMIT,
-            timestamp=datetime.datetime.now(),
         )
+
         res = await repo.add_submission(
-            transaction_session, filing_id=1, filename="file1.csv", submitter=user_action_submit
+            transaction_session, filing_id=1, filename="file1.csv", submitter_id=user_action_submit.id
         )
         assert res.id == 5
         assert res.filing == 1
         assert res.state == SubmissionState.SUBMISSION_STARTED
-        assert res.submitter.id == 2
-        assert res.submitter.user_id == "123456-7890-ABCDEF-GHIJ"
-        assert res.submitter.user_name == "test submitter"
-        assert res.submitter.user_email == "test@local.host"
+        assert res.submitter.id == user_action_submit.id
+        assert res.submitter.user_id == user_action_submit.user_id
+        assert res.submitter.user_name == user_action_submit.user_name
+        assert res.submitter.user_email == user_action_submit.user_email
         assert res.submitter.action_type == UserActionType.SUBMIT
 
     async def test_update_submission(self, session_generator: async_scoped_session):
@@ -390,7 +390,7 @@ class TestSubmissionRepo:
         )
         async with session_generator() as add_session:
             res = await repo.add_submission(
-                add_session, filing_id=1, filename="file1.csv", submitter=user_action_submit
+                add_session, filing_id=1, filename="file1.csv", submitter_id=user_action_submit.id
             )
 
         res.state = SubmissionState.VALIDATION_IN_PROGRESS
