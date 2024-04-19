@@ -126,11 +126,11 @@ async def validate_and_update_submission(period_code: str, lei: str, submission:
 
 def build_validation_results(result):
     val_json = json.loads(df_to_json(result[1]))
-    val_res = {}
+    val_res = {"syntax_errors":{}}
 
     if result[2] == ValidationPhase.SYNTACTICAL.value:
+        val_res["syntax_errors"]["count"] = len(val_json)
         val_res["syntax_errors"]["details"] = val_json
-        val_res["syntax_errors"]["count"] = len(val_res["syntax_errors"]["details"])
     else:
         errors_list = [e for e in val_json if e["validation"]["severity"] == Severity.ERROR.value]
         warnings_list = [e for e in val_json if e["validation"]["severity"] == Severity.WARNING.value]
