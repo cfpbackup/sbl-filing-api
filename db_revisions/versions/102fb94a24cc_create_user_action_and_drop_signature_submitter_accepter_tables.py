@@ -32,7 +32,7 @@ def upgrade() -> None:
                 "SUBMIT",
                 "ACCEPT",
                 "SIGN",
-                name="useractionstate",
+                name="useractiontype",
             ),
         ),
         sa.Column("timestamp", sa.DateTime(), server_default=sa.func.now(), nullable=False),
@@ -49,10 +49,10 @@ def upgrade() -> None:
     )
 
     with op.batch_alter_table("submission", schema=None) as batch_op:
-        batch_op.add_column(sa.Column("submitter", sa.Integer, nullable=False))
-        batch_op.add_column(sa.Column("accepter", sa.Integer))
-        batch_op.create_foreign_key("submission_submitter_fkey", "user_action", ["submitter"], ["id"])
-        batch_op.create_foreign_key("submission_accepter_fkey", "user_action", ["accepter"], ["id"])
+        batch_op.add_column(sa.Column("submitter_id", sa.Integer, nullable=False))
+        batch_op.add_column(sa.Column("accepter_id", sa.Integer))
+        batch_op.create_foreign_key("submission_submitter_fkey", "user_action", ["submitter_id"], ["id"])
+        batch_op.create_foreign_key("submission_accepter_fkey", "user_action", ["accepter_id"], ["id"])
 
     op.drop_table("accepter")
     op.drop_table("signature")

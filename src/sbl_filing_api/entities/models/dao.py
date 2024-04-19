@@ -27,9 +27,9 @@ class SubmissionDAO(Base):
     id: Mapped[int] = mapped_column(index=True, primary_key=True, autoincrement=True)
     filing: Mapped[int] = mapped_column(ForeignKey("filing.id"))
     submitter_id: Mapped[int] = mapped_column(ForeignKey("user_action.id"))
-    submitter: Mapped[UserActionDAO] = relationship("UserActionDAO", foreign_keys=[submitter_id])
+    submitter: Mapped[UserActionDAO] = relationship(lazy="selectin", foreign_keys=[submitter_id])
     accepter_id: Mapped[int] = mapped_column(ForeignKey("user_action.id"), nullable=True)
-    accepter: Mapped[UserActionDAO] = relationship("UserActionDAO", foreign_keys=[accepter_id])
+    accepter: Mapped[UserActionDAO] = relationship(lazy="selectin", foreign_keys=[accepter_id])
     state: Mapped[SubmissionState] = mapped_column(SAEnum(SubmissionState))
     validation_ruleset_version: Mapped[str] = mapped_column(nullable=True)
     validation_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=True)
@@ -113,6 +113,7 @@ class FilingDAO(Base):
     signatures: Mapped[List[UserActionDAO] | None] = relationship(
         "UserActionDAO",
         secondary="filing_signatures",
+        lazy="selectin",
     )
     confirmation_id: Mapped[str] = mapped_column(nullable=True)
 
