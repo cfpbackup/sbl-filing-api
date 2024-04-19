@@ -91,7 +91,7 @@ async def validate_and_update_submission(period_code: str, lei: str, submission:
 
         # Validate Phases
         result = validate_phases(df, {"lei": lei})
-
+        
         # Update tables with response
         if not result[0]:
             submission.state = (
@@ -101,7 +101,9 @@ async def validate_and_update_submission(period_code: str, lei: str, submission:
             )
         else:
             submission.state = SubmissionState.VALIDATION_SUCCESSFUL
+        print(f"BANG!! We found a result state of {submission.state}")
         submission.validation_json = build_validation_results(result)
+        print("BANG!! Validation Results built")
         submission_report = df_to_download(result[1])
         await upload_to_storage(
             period_code, lei, str(submission.id) + REPORT_QUALIFIER, submission_report.encode("utf-8")
