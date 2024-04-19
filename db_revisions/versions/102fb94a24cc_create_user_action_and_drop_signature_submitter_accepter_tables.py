@@ -1,7 +1,7 @@
 """create user_action table to replace Signatures, Submitter, and Accepter tables
 
 Revision ID: 102fb94a24cc
-Revises: ccc50ec18a7e
+Revises: 4cd30d188352
 Create Date: 2024-04-12 13:33:20.053959
 
 """
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "102fb94a24cc"
-down_revision: Union[str, None] = "0040045eae14"
+down_revision: Union[str, None] = "4cd30d188352"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

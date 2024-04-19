@@ -91,6 +91,13 @@ async def sign_filing(request: Request, lei: str, period_code: str):
             status_code=status.HTTP_403_FORBIDDEN,
             content=f"Cannot sign filing. Filing for {lei} for period {period_code} does not have contact info defined.",
         )
+    """
+    if not filing.institution_snapshot_id:
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content=f"Cannot sign filing. Filing for {lei} for period {period_code} does not have institution snapshot id defined.",
+        )
+    """
 
     sig = await repo.add_user_action(
         request.state.db_session,
