@@ -55,7 +55,7 @@ class TestFilingApi:
     def test_get_filing(self, app_fixture: FastAPI, get_filing_mock: Mock, authed_user_mock: Mock):
         client = TestClient(app_fixture)
         res = client.get("/v1/filing/institutions/123456ABCDEF/filings/2024/")
-        get_filing_mock.assert_called_with(ANY, "123456ABCDEF", "2024")
+        get_filing_mock.assert_called_with(ANY, "123456ABCDEF", "2024", 4)
         assert res.status_code == 200
         assert res.json()["lei"] == "123456ABCDEF"
         assert res.json()["filing_period"] == "2024"

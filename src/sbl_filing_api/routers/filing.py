@@ -58,11 +58,25 @@ async def post_filing(request: Request, lei: str, period_code: str):
 
     if period:
         try:
-            return await repo.create_new_filing(request.state.db_session, lei, period_code)
-        except IntegrityError:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Filing already exists for Filing Period {period_code} and LEI {lei}",
+            creator = await repo.add_user_action(
+                request.state.db_session,
+                user_id=request.user.id,
+                user_name=request.user.name,
+                user_email=request.user.email,
+                action_type=UserActionType.CREATE,
+            )
+            try:
+                return await repo.create_new_filing(request.state.db_session, lei, period_code, creator_id=creator.id)
+            except IntegrityError:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Filing already exists for Filing Period {period_code} and LEI {lei}",
+                )
+        except Exception as e:
+            logger.error("Error while trying to process CREATE User Action", e, exec_info=True, stack_info=True)
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=f"{e}",
             )
     else:
         return JSONResponse(

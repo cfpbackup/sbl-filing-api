@@ -113,6 +113,7 @@ def post_filing_mock(mocker: MockerFixture) -> Mock:
             phone="312-345-6789",
             email="test3@cfpb.gov",
         ),
+        creator_id=4,
     )
     return mock
 
