@@ -97,8 +97,8 @@ def downgrade() -> None:
 
     op.drop_constraint(constraint_name="submission_submitter_fkey", table_name="submission")
     op.drop_constraint(constraint_name="submission_accepter_fkey", table_name="submission")
-    op.drop_column("submission", "submitter")
-    op.drop_column("submission", "accepter")
+    op.drop_column("submission", "submitter_id")
+    op.drop_column("submission", "accepter_id")
 
     op.drop_table("filing_signature")
     op.drop_table("user_action")
