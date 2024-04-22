@@ -1,8 +1,10 @@
 import logging
 
+from concurrent.futures import ProcessPoolExecutor
 from fastapi import Depends, Request, UploadFile, BackgroundTasks, status, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
 from regtech_api_commons.api.router_wrapper import Router
+from sbl_filing_api.config import settings
 from sbl_filing_api.entities.models.model_enums import UserActionType
 from sbl_filing_api.services import submission_processor
 from typing import Annotated, List
@@ -144,17 +146,30 @@ async def upload_file(
         submission.state = SubmissionState.SUBMISSION_UPLOADED
         submission = await repo.update_submission(submission)
     except Exception as e:
-        logger.error(f"Error while trying to process Submission {submission.id}", e, exec_info=True, stack_info=True)
+        logger.error(f"Error while trying to process Submission {submission.id}", e, exc_info=True, stack_info=True)
         submission.state = SubmissionState.UPLOAD_FAILED
         submission = await repo.update_submission(submission)
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content=f"{e}",
         )
-
-    background_tasks.add_task(submission_processor.validation_monitor, period_code, lei, submission, content)
+    from multiprocessing import Manager
+    exec_check = Manager().dict()
+    exec_check['continue'] = True
+    executor = ProcessPoolExecutor()
+    future = executor.submit(submission_processor.validate_submission, period_code, lei, submission, content, exec_check)
+    background_tasks.add_task(check_future, future, submission.id, exec_check)
+    executor.shutdown(wait=False)
 
     return submission
+
+async def check_future(future, submission_id, exec_check):
+    import asyncio
+    await asyncio.sleep(settings.expired_submission_check_secs)
+    if not future.done():
+        exec_check['continue'] = False
+        await repo.expire_submission(submission_id)
+        logger.warn(f"Validation for submission {submission_id} did not complete within the expected timeframe, will be set to VALIDATION_EXPIRED.")
 
 
 @router.get("/institutions/{lei}/filings/{period_code}/submissions", response_model=List[SubmissionDTO])
@@ -175,7 +190,7 @@ async def get_submission_latest(request: Request, lei: str, period_code: str):
 @router.get("/institutions/{lei}/filings/{period_code}/submissions/{id}", response_model=SubmissionDTO)
 @requires("authenticated")
 async def get_submission(request: Request, id: int):
-    result = await repo.get_submission(request.state.db_session, id)
+    result = await repo.get_submission(incoming_session=request.state.db_session, submission_id=id)
     if result:
         return result
     return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
@@ -184,7 +199,7 @@ async def get_submission(request: Request, id: int):
 @router.put("/institutions/{lei}/filings/{period_code}/submissions/{id}/accept", response_model=SubmissionDTO)
 @requires("authenticated")
 async def accept_submission(request: Request, id: int, lei: str, period_code: str):
-    submission = await repo.get_submission(request.state.db_session, id)
+    submission = await repo.get_submission(incoming_session=request.state.db_session, submission_id=id)
     if not submission:
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -273,7 +288,7 @@ async def get_latest_submission_report(request: Request, lei: str, period_code: 
 )
 @requires("authenticated")
 async def get_submission_report(request: Request, lei: str, period_code: str, id: int):
-    sub = await repo.get_submission(request.state.db_session, id)
+    sub = await repo.get_submission(submission_id=id, incoming_session=request.state.db_session)
     if sub:
         file_data = await submission_processor.get_from_storage(
             period_code, lei, str(sub.id) + submission_processor.REPORT_QUALIFIER

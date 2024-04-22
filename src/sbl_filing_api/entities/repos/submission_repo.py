@@ -51,7 +51,8 @@ async def get_filing_periods(session: AsyncSession) -> List[FilingPeriodDAO]:
     return await query_helper(session, FilingPeriodDAO)
 
 
-async def get_submission(session: AsyncSession, submission_id: int) -> SubmissionDAO:
+async def get_submission(submission_id: int, incoming_session: AsyncSession = None) -> SubmissionDAO:
+    session = incoming_session if incoming_session else SessionLocal()
     result = await query_helper(session, SubmissionDAO, id=submission_id)
     return result[0] if result else None
 
@@ -105,6 +106,14 @@ async def add_submission(
 async def update_submission(submission: SubmissionDAO, incoming_session: AsyncSession = None) -> SubmissionDAO:
     session = incoming_session if incoming_session else SessionLocal()
     return await upsert_helper(session, submission, SubmissionDAO)
+
+
+async def expire_submission(submission_id: int):
+    session = SessionLocal()
+    submission = await get_submission(submission_id, session)
+    submission.state = SubmissionState.VALIDATION_EXPIRED
+    await upsert_helper(session, submission, SubmissionDAO)
+        
 
 
 async def upsert_filing_period(session: AsyncSession, filing_period: FilingPeriodDTO) -> FilingPeriodDAO:
@@ -161,16 +170,20 @@ async def add_user_action(
 
 
 async def upsert_helper(session: AsyncSession, original_data: Any, table_obj: T) -> T:
-    copy_data = original_data.__dict__.copy()
-    # this is only for if a DAO is passed in
-    # Should be DTOs, but hey, it's python
-    if "_sa_instance_state" in copy_data:
-        del copy_data["_sa_instance_state"]
-    new_dao = table_obj(**copy_data)
-    new_dao = await session.merge(new_dao)
-    await session.commit()
-    await session.refresh(new_dao)
-    return new_dao
+    try:
+        copy_data = original_data.__dict__.copy()
+        # this is only for if a DAO is passed in
+        # Should be DTOs, but hey, it's python
+        if "_sa_instance_state" in copy_data:
+            del copy_data["_sa_instance_state"]
+        new_dao = table_obj(**copy_data)
+        new_dao = await session.merge(new_dao)
+        await session.commit()
+        await session.refresh(new_dao)
+        return new_dao
+    except:
+        await session.rollback()
+        raise
 
 
 async def query_helper(session: AsyncSession, table_obj: T, **filter_args) -> List[T]:

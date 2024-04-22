@@ -15,28 +15,22 @@ from fastapi import HTTPException
 import logging
 from fsspec import AbstractFileSystem, filesystem
 from sbl_filing_api.config import settings
+from datetime import datetime
 
 log = logging.getLogger(__name__)
 
 REPORT_QUALIFIER = "_report"
 
-
-async def validation_monitor(period_code: str, lei: str, submission: SubmissionDAO, content: bytes):
+def validate_submission(period_code: str, lei: str, submission: SubmissionDAO, content: bytes, exec_check: dict):
+    loop = asyncio.new_event_loop()
     try:
-        await asyncio.wait_for(
-            validate_and_update_submission(period_code, lei, submission, content),
-            timeout=settings.expired_submission_check_secs,
-        )
-    except asyncio.TimeoutError as te:
-        log.warn(
-            f"Validation for submission {submission.id} did not complete within the expected timeframe, will be set to VALIDATION_EXPIRED.",
-            te,
-            exc_info=True,
-            stack_info=True,
-        )
-        submission.state = SubmissionState.VALIDATION_EXPIRED
-        await update_submission(submission)
-
+        coro = validate_and_update_submission(period_code, lei, submission, content, exec_check)
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(coro)
+    except Exception as e:
+        log.error(e, exc_info=True, stack_info=True)
+    finally:
+        loop.close()
 
 def validate_file_processable(file: UploadFile) -> None:
     extension = file.filename.split(".")[-1].lower()
@@ -80,7 +74,7 @@ async def get_from_storage(period_code: str, lei: str, file_identifier: str, ext
         raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="Failed to read file.")
 
 
-async def validate_and_update_submission(period_code: str, lei: str, submission: SubmissionDAO, content: bytes):
+async def validate_and_update_submission(period_code: str, lei: str, submission: SubmissionDAO, content: bytes, exec_check: dict):
     validator_version = imeta.version("regtech-data-validator")
     submission.validation_ruleset_version = validator_version
     submission.state = SubmissionState.VALIDATION_IN_PROGRESS
@@ -88,7 +82,6 @@ async def validate_and_update_submission(period_code: str, lei: str, submission:
 
     try:
         df = pd.read_csv(BytesIO(content), dtype=str, na_filter=False)
-
         # Validate Phases
         result = validate_phases(df, {"lei": lei})
         
@@ -101,13 +94,13 @@ async def validate_and_update_submission(period_code: str, lei: str, submission:
             )
         else:
             submission.state = SubmissionState.VALIDATION_SUCCESSFUL
-        print(f"BANG!! We found a result state of {submission.state}")
         submission.validation_json = build_validation_results(result)
-        print("BANG!! Validation Results built")
         submission_report = df_to_download(result[1])
         await upload_to_storage(
             period_code, lei, str(submission.id) + REPORT_QUALIFIER, submission_report.encode("utf-8")
         )
+        if not exec_check['continue']:
+            return
         await update_submission(submission)
 
     except RuntimeError as re:
