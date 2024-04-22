@@ -6,15 +6,15 @@
 |-------------------------------------------------------- | -------: | -------: | -------: | -------: | ------: | --------: |
 | src/sbl\_filing\_api/config.py                          |       49 |        0 |        8 |        1 |     98% |    13->17 |
 | src/sbl\_filing\_api/entities/engine/engine.py          |       10 |        0 |        0 |        0 |    100% |           |
-| src/sbl\_filing\_api/entities/models/dao.py             |      104 |        7 |        0 |        0 |     93% |34, 50, 69, 84, 104, 119, 134 |
-| src/sbl\_filing\_api/entities/models/dto.py             |       82 |        0 |        0 |        0 |    100% |           |
-| src/sbl\_filing\_api/entities/models/model\_enums.py    |       18 |        0 |        0 |        0 |    100% |           |
-| src/sbl\_filing\_api/entities/repos/submission\_repo.py |      118 |        0 |       18 |        2 |     99% |63->65, 70->72 |
+| src/sbl\_filing\_api/entities/models/dao.py             |       91 |        5 |        0 |        0 |     95% |40, 59, 74, 94, 119 |
+| src/sbl\_filing\_api/entities/models/dto.py             |       70 |        0 |        0 |        0 |    100% |           |
+| src/sbl\_filing\_api/entities/models/model\_enums.py    |       22 |        0 |        0 |        0 |    100% |           |
+| src/sbl\_filing\_api/entities/repos/submission\_repo.py |      109 |        0 |       18 |        2 |     98% |61->63, 68->70 |
 | src/sbl\_filing\_api/main.py                            |       33 |       11 |        2 |        0 |     69% |26-31, 35-39 |
 | src/sbl\_filing\_api/routers/dependencies.py            |       16 |        0 |        8 |        2 |     92% |12->exit, 18->exit |
-| src/sbl\_filing\_api/routers/filing.py                  |      150 |        0 |      120 |        0 |    100% |           |
+| src/sbl\_filing\_api/routers/filing.py                  |      153 |        0 |      120 |        0 |    100% |           |
 | src/sbl\_filing\_api/services/submission\_processor.py  |       69 |        0 |       12 |        0 |    100% |           |
-|                                               **TOTAL** |  **649** |   **18** |  **168** |    **5** | **97%** |           |
+|                                               **TOTAL** |  **622** |   **16** |  **168** |    **5** | **97%** |           |
 
 6 empty files skipped.
 
