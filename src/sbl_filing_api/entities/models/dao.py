@@ -125,7 +125,7 @@ class FilingDAO(Base):
     filing_period: Mapped[str] = mapped_column(ForeignKey("filing_period.code"))
     lei: Mapped[str]
     tasks: Mapped[List[FilingTaskProgressDAO] | None] = relationship(lazy="selectin", cascade="all, delete-orphan")
-    institution_snapshot_id: Mapped[str]
+    institution_snapshot_id: Mapped[str] = mapped_column(nullable=True)
     contact_info: Mapped[ContactInfoDAO] = relationship("ContactInfoDAO", lazy="joined")
     signatures: Mapped[List[SignatureDAO] | None] = relationship("SignatureDAO", lazy="selectin")
     confirmation_id: Mapped[str] = mapped_column(nullable=True)

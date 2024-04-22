@@ -785,6 +785,16 @@ class TestFilingApi:
             filename="file1.csv",
         )
 
+        """
+        get_filing_mock.return_value.institution_snapshot_id = None
+        res = client.put("/v1/filing/institutions/123456ABCDEF/filings/2024/sign")
+        assert res.status_code == 403
+        assert (
+            res.json()
+            == "Cannot sign filing. Filing for 123456ABCDEF for period 2024 does not have institution snapshot id defined."
+        )
+        """
+
         get_filing_mock.return_value.contact_info = None
         res = client.put("/v1/filing/institutions/123456ABCDEF/filings/2024/sign")
         assert res.status_code == 403

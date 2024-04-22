@@ -203,7 +203,7 @@ class TestSubmissionRepo:
         assert res.id == 4
         assert res.filing_period == "2024"
         assert res.lei == "12345ABCDE"
-        assert res.institution_snapshot_id == "v1"
+        assert res.institution_snapshot_id is None
 
     async def test_modify_filing(self, transaction_session: AsyncSession):
         mod_filing = FilingDTO(

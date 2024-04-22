@@ -128,11 +128,7 @@ async def upsert_filing(session: AsyncSession, filing: FilingDTO) -> FilingDAO:
 
 
 async def create_new_filing(session: AsyncSession, lei: str, filing_period: str) -> FilingDAO:
-    new_filing = FilingDAO(
-        filing_period=filing_period,
-        lei=lei,
-        institution_snapshot_id="v1",  # need story to retrieve this from user-fi I believe
-    )
+    new_filing = FilingDAO(filing_period=filing_period, lei=lei)
     new_filing = await upsert_helper(session, new_filing, FilingDAO)
     new_filing = await populate_missing_tasks(session, [new_filing])
     return new_filing[0]
