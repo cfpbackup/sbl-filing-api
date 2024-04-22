@@ -291,15 +291,3 @@ def test_migration_to_2e81179924b5(alembic_runner: MigrationContext, alembic_eng
 
     assert "hq_address_street_3" in [c["name"] for c in inspector.get_columns("contact_info")]
     assert "hq_address_street_4" in [c["name"] for c in inspector.get_columns("contact_info")]
-
-
-def test_migration_to_ccc50ec18a7e(alembic_runner: MigrationContext, alembic_engine: Engine):
-    alembic_runner.migrate_up_to("ccc50ec18a7e")
-
-
-def test_migration_to_0040045eae14(alembic_runner: MigrationContext, alembic_engine: Engine):
-    alembic_runner.migrate_up_to("0040045eae14")
-
-
-def test_migration_to_c89920be2e66(alembic_runner: MigrationContext, alembic_engine: Engine):
-    alembic_runner.migrate_up_to("c89920be2e66")
