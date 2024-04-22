@@ -322,9 +322,9 @@ def test_migration_to_102fb94a24cc(alembic_runner: MigrationContext, alembic_eng
             "user_action",
             "filing",
         ]
-    ) == set([c["name"] for c in inspector.get_columns("filing_signatures")])
+    ) == set([c["name"] for c in inspector.get_columns("filing_signature")])
 
-    filing_sig_fks = inspector.get_foreign_keys("filing_signatures")
+    filing_sig_fks = inspector.get_foreign_keys("filing_signature")
     assert filing_sig_fks[0]["name"] == "filing_signatures_user_action_fkey"
     assert filing_sig_fks[1]["name"] == "filing_signatures_filing_fkey"
 

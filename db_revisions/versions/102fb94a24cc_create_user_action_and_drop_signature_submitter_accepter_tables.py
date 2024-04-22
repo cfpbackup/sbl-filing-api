@@ -40,7 +40,7 @@ def upgrade() -> None:
     )
 
     op.create_table(
-        "filing_signatures",
+        "filing_signature",
         sa.Column("user_action", sa.INTEGER, primary_key=True, unique=True, nullable=False),
         sa.Column("filing", sa.Integer, nullable=False),
         sa.PrimaryKeyConstraint("user_action", name="filing_signatures_pkey"),
@@ -100,5 +100,5 @@ def downgrade() -> None:
     op.drop_column("submission", "submitter")
     op.drop_column("submission", "accepter")
 
-    op.drop_table("filing_signatures")
+    op.drop_table("filing_signature")
     op.drop_table("user_action")
