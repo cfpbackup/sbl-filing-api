@@ -94,8 +94,8 @@ class ContactInfoDAO(Base):
         return f"ContactInfo ID: {self.id}, First Name: {self.first_name}, Last Name: {self.last_name}, Address Street 1: {self.hq_address_street_1}, Address Street 2: {self.hq_address_street_2}, Address City: {self.hq_address_city}, Address State: {self.hq_address_state}, Address Zip: {self.hq_address_zip}"
 
 
-class FilingSignaturesDAO(Base):
-    __tablename__ = "filing_signatures"
+class FilingSignatureDAO(Base):
+    __tablename__ = "filing_signature"
     user_action: Mapped[int] = mapped_column(
         ForeignKey("user_action.id"), nullable=False, primary_key=True, unique=True
     )
@@ -111,7 +111,7 @@ class FilingDAO(Base):
     institution_snapshot_id: Mapped[str] = mapped_column(nullable=True)
     contact_info: Mapped[ContactInfoDAO] = relationship("ContactInfoDAO", lazy="joined")
     signatures: Mapped[List[UserActionDAO] | None] = relationship(
-        "UserActionDAO", secondary="filing_signatures", lazy="selectin"
+        "UserActionDAO", secondary="filing_signature", lazy="selectin"
     )
     confirmation_id: Mapped[str] = mapped_column(nullable=True)
 
