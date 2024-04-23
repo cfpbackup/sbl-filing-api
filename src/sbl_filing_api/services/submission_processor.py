@@ -112,7 +112,6 @@ async def validate_and_update_submission(period_code: str, lei: str, submission:
         log.error("The file is malformed", re, exc_info=True, stack_info=True)
         submission.state = SubmissionState.SUBMISSION_UPLOAD_MALFORMED
         await update_submission(submission)
-        raise HTTPException(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=re)
 
 
 def build_validation_results(result):
