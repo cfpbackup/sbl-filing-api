@@ -9,12 +9,13 @@ from regtech_data_validator.checks import Severity
 import pandas as pd
 import importlib.metadata as imeta
 from sbl_filing_api.entities.models.dao import SubmissionDAO, SubmissionState
-from sbl_filing_api.entities.repos.submission_repo import update_submission
+from sbl_filing_api.entities.repos.submission_repo import update_submission, get_submission
 from http import HTTPStatus
 from fastapi import HTTPException
 import logging
 from fsspec import AbstractFileSystem, filesystem
 from sbl_filing_api.config import settings
+from sqlalchemy.ext.asyncio import AsyncSession
 
 log = logging.getLogger(__name__)
 
@@ -80,11 +81,11 @@ async def get_from_storage(period_code: str, lei: str, file_identifier: str, ext
         raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="Failed to read file.")
 
 
-async def validate_and_update_submission(period_code: str, lei: str, submission: SubmissionDAO, content: bytes):
+async def validate_and_update_submission(period_code: str, lei: str, submission: SubmissionDAO, content: bytes, exec_check: dict, session: AsyncSession):
     validator_version = imeta.version("regtech-data-validator")
     submission.validation_ruleset_version = validator_version
     submission.state = SubmissionState.VALIDATION_IN_PROGRESS
-    submission = await update_submission(submission)
+    submission = await update_submission(submission, session)
 
     try:
         df = pd.read_csv(BytesIO(content), dtype=str, na_filter=False)
@@ -106,9 +107,15 @@ async def validate_and_update_submission(period_code: str, lei: str, submission:
         await upload_to_storage(
             period_code, lei, str(submission.id) + REPORT_QUALIFIER, submission_report.encode("utf-8")
         )
-        await update_submission(submission)
+        
+        current_sub = await get_submission(session, submission.id)
+        if current_sub.state == SubmissionState.VALIDATION_EXPIRED:
+            log.warning(f"Submission {submission.id} is expired, will not be updating final state with reesults.")
+            return
+        
+        await update_submission(submission, session)
 
     except RuntimeError as re:
         log.error("The file is malformed", re, exc_info=True, stack_info=True)
         submission.state = SubmissionState.SUBMISSION_UPLOAD_MALFORMED
-        await update_submission(submission)
+        await update_submission(submission, session)

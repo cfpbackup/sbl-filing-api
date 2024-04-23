@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse, FileResponse
 from regtech_api_commons.api.router_wrapper import Router
 from sbl_filing_api.entities.models.model_enums import UserActionType
 from sbl_filing_api.services import submission_processor
+from sbl_filing_api.services.multithread_handler import MultithreadedSubmissionHandler
 from typing import Annotated, List
 
 from sbl_filing_api.entities.engine.engine import get_session
@@ -143,7 +144,7 @@ async def upload_file(
             submission = await repo.update_submission(submission)
         except Exception as e:
             logger.error(
-                f"Error while trying to process Submission {submission.id}", e, exec_info=True, stack_info=True
+                f"Error while trying to process Submission {submission.id}", e, exc_info=True, stack_info=True
             )
             submission.state = SubmissionState.UPLOAD_FAILED
             submission = await repo.update_submission(submission)
@@ -151,7 +152,9 @@ async def upload_file(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=f"{e}",
             )
-        background_tasks.add_task(submission_processor.validation_monitor, period_code, lei, submission, content)
+            
+        handler = MultithreadedSubmissionHandler(background_tasks, request.state.db_session)
+        handler.handle_submission(period_code, lei, submission, content)
 
         return submission
 
