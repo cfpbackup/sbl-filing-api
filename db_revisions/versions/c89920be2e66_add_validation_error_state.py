@@ -1,7 +1,7 @@
 """Add VALIDATION_ERROR state
 
 Revision ID: c89920be2e66
-Revises: 0040045eae14
+Revises: 102fb94a24cc
 Create Date: 2024-04-18 13:06:48.162639
 
 """
