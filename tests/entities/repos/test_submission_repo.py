@@ -17,9 +17,8 @@ from sbl_filing_api.entities.models.dao import (
     SubmissionState,
     ContactInfoDAO,
     UserActionDAO,
-    UserActionDAO,
 )
-from sbl_filing_api.entities.models.dto import FilingPeriodDTO, FilingDTO, ContactInfoDTO, UserActionDTO
+from sbl_filing_api.entities.models.dto import FilingPeriodDTO, ContactInfoDTO
 from sbl_filing_api.entities.models.model_enums import UserActionType
 from sbl_filing_api.entities.repos import submission_repo as repo
 from regtech_api_commons.models.auth import AuthenticatedUser
@@ -571,7 +570,6 @@ class TestSubmissionRepo:
         assert res[0].user_name == "signer name"
 
     async def test_add_user_action(self, query_session: AsyncSession, transaction_session: AsyncSession):
-
         user_actions_in_repo = await repo.get_user_actions(query_session)
 
         accepter = await repo.add_user_action(
