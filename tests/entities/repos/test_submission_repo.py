@@ -247,17 +247,14 @@ class TestSubmissionRepo:
         assert res.creator.action_type == UserActionType.CREATE
 
     async def test_modify_filing(self, transaction_session: AsyncSession):
-        user_action_create = UserActionDAO(
-            id=4,
+
+        user_action_create = await repo.add_user_action(
+            transaction_session,
             user_id="123456-7890-ABCDEF-GHIJ",
-            user_name="Test Creator",
+            user_name="test creator",
             user_email="test@local.host",
             action_type=UserActionType.CREATE,
-            timestamp=datetime.datetime.now(),
         )
-        """mod_filing = FilingDTO(
-            id=3, lei="ZYXWVUTSRQP", institution_snapshot_id="Snapshot-2", filing_period="2024", tasks=[], creator_id=4
-        )"""
 
         mod_filing = FilingDAO(
             id=3,
@@ -265,7 +262,7 @@ class TestSubmissionRepo:
             institution_snapshot_id="Snapshot-2",
             filing_period="2024",
             tasks=[],
-            creator=user_action_create,
+            creator_id=user_action_create.id,
         )
 
         res = await repo.upsert_filing(transaction_session, mod_filing)
@@ -273,9 +270,9 @@ class TestSubmissionRepo:
         assert res.filing_period == "2024"
         assert res.lei == "ZYXWVUTSRQP"
         assert res.institution_snapshot_id == "Snapshot-2"
-        assert res.creator.id == 4
-        # assert res.creator.user_id == "123456-7890-ABCDEF-GHIJ"
-        # assert res.creator.user_name == "test creator"
+        assert res.creator.id == user_action_create.id
+        assert res.creator.user_id == "123456-7890-ABCDEF-GHIJ"
+        assert res.creator.user_name == "test creator"
 
     async def test_get_filing_tasks(self, transaction_session: AsyncSession):
         tasks = await repo.get_filing_tasks(transaction_session)

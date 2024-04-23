@@ -623,6 +623,14 @@ class TestFilingApi:
                 email="name_1@email.test",
             ),
             creator_id=1,
+            creator=UserActionDAO(
+                id=1,
+                user_id="123456-7890-ABCDEF-GHIJ",
+                user_name="test creator",
+                user_email="test@local.host",
+                action_type=UserActionType.CREATE,
+                timestamp=datetime.datetime.now(),
+            ),
         )
 
         client = TestClient(app_fixture)
