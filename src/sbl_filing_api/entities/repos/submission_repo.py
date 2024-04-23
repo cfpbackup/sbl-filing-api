@@ -51,7 +51,8 @@ async def get_filing_periods(session: AsyncSession) -> List[FilingPeriodDAO]:
     return await query_helper(session, FilingPeriodDAO)
 
 
-async def get_submission(session: AsyncSession, submission_id: int) -> SubmissionDAO:
+async def get_submission(submission_id: int, incoming_session: AsyncSession = None) -> SubmissionDAO:
+    session = incoming_session if incoming_session else SessionLocal()
     result = await query_helper(session, SubmissionDAO, id=submission_id)
     return result[0] if result else None
 
@@ -105,7 +106,8 @@ async def update_submission(submission: SubmissionDAO, incoming_session: AsyncSe
     return await upsert_helper(session, submission, SubmissionDAO)
 
 
-async def expire_submission(session: AsyncSession, submission_id: int):
+async def expire_submission(submission_id: int):
+    session = SessionLocal()
     submission = await get_submission(submission_id, session)
     submission.state = SubmissionState.VALIDATION_EXPIRED
     await upsert_helper(session, submission, SubmissionDAO)

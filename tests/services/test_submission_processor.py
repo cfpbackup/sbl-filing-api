@@ -118,7 +118,9 @@ class TestSubmissionProcessor:
         file_mock = mocker.patch("sbl_filing_api.services.submission_processor.upload_to_storage")
         df_to_download_mock.return_value = ""
 
-        await submission_processor.validate_and_update_submission("2024", "123456790", mock_sub, None)
+        await submission_processor.validate_and_update_submission(
+            "2024", "123456790", mock_sub, None, {"continue": True}
+        )
         encoded_results = df_to_download_mock.return_value.encode("utf-8")
         assert file_mock.mock_calls[0].args == (
             "2024",
@@ -141,7 +143,9 @@ class TestSubmissionProcessor:
         )
         file_mock = mocker.patch("sbl_filing_api.services.submission_processor.upload_to_storage")
 
-        await submission_processor.validate_and_update_submission("2024", "123456790", mock_sub, None)
+        await submission_processor.validate_and_update_submission(
+            "2024", "123456790", mock_sub, None, {"continue": True}
+        )
         encoded_results = df_to_download_mock.return_value.encode("utf-8")
         assert file_mock.mock_calls[0].args == (
             "2024",
@@ -165,7 +169,9 @@ class TestSubmissionProcessor:
 
         file_mock = mocker.patch("sbl_filing_api.services.submission_processor.upload_to_storage")
 
-        await submission_processor.validate_and_update_submission("2024", "123456790", mock_sub, None)
+        await submission_processor.validate_and_update_submission(
+            "2024", "123456790", mock_sub, None, {"continue": True}
+        )
         encoded_results = df_to_download_mock.return_value.encode("utf-8")
         assert file_mock.mock_calls[0].args == (
             "2024",
@@ -201,7 +207,9 @@ class TestSubmissionProcessor:
         mock_read_csv = mocker.patch("pandas.read_csv")
         mock_read_csv.side_effect = RuntimeError("File not in csv format")
 
-        await submission_processor.validate_and_update_submission("2024", "123456790", mock_sub, None)
+        await submission_processor.validate_and_update_submission(
+            "2024", "123456790", mock_sub, None, {"continue": True}
+        )
 
         mock_update_submission.assert_called()
         log_mock.error.assert_called_with("The file is malformed", ANY, exc_info=True, stack_info=True)
@@ -212,7 +220,9 @@ class TestSubmissionProcessor:
         mock_validation = mocker.patch("sbl_filing_api.services.submission_processor.validate_phases")
         mock_validation.side_effect = RuntimeError("File can not be parsed by validator")
 
-        await submission_processor.validate_and_update_submission("2024", "123456790", mock_sub, None)
+        await submission_processor.validate_and_update_submission(
+            "2024", "123456790", mock_sub, None, {"continue": True}
+        )
         log_mock.error.assert_called_with("The file is malformed", ANY, exc_info=True, stack_info=True)
         assert mock_update_submission.mock_calls[0].args[0].state == SubmissionState.VALIDATION_IN_PROGRESS
         assert mock_update_submission.mock_calls[1].args[0].state == SubmissionState.SUBMISSION_UPLOAD_MALFORMED

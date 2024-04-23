@@ -1,11 +1,13 @@
 import logging
 
+from concurrent.futures import ProcessPoolExecutor
 from fastapi import Depends, Request, UploadFile, BackgroundTasks, status, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
+from multiprocessing import Manager
 from regtech_api_commons.api.router_wrapper import Router
 from sbl_filing_api.entities.models.model_enums import UserActionType
 from sbl_filing_api.services import submission_processor
-from sbl_filing_api.services.multithread_handler import MultithreadedSubmissionHandler
+from sbl_filing_api.services.multithread_handler import handle_submission, check_future
 from typing import Annotated, List
 
 from sbl_filing_api.entities.engine.engine import get_session
@@ -143,18 +145,20 @@ async def upload_file(
             submission.state = SubmissionState.SUBMISSION_UPLOADED
             submission = await repo.update_submission(submission)
         except Exception as e:
-            logger.error(
-                f"Error while trying to process Submission {submission.id}", e, exc_info=True, stack_info=True
-            )
+            logger.error(f"Error while trying to process Submission {submission.id}", e, exc_info=True, stack_info=True)
             submission.state = SubmissionState.UPLOAD_FAILED
             submission = await repo.update_submission(submission)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=f"{e}",
             )
-            
-        handler = MultithreadedSubmissionHandler(background_tasks, request.state.db_session)
-        handler.handle_submission(period_code, lei, submission, content)
+
+        exec_check = Manager().dict()
+        exec_check["continue"] = True
+        executor = ProcessPoolExecutor()
+        future = executor.submit(handle_submission, period_code, lei, submission, content, exec_check)
+        background_tasks.add_task(check_future, future, submission.id, exec_check)
+        executor.shutdown(wait=False)
 
         return submission
 
@@ -184,7 +188,7 @@ async def get_submission_latest(request: Request, lei: str, period_code: str):
 @router.get("/institutions/{lei}/filings/{period_code}/submissions/{id}", response_model=SubmissionDTO)
 @requires("authenticated")
 async def get_submission(request: Request, id: int):
-    result = await repo.get_submission(request.state.db_session, id)
+    result = await repo.get_submission(incoming_session=request.state.db_session, submission_id=id)
     if result:
         return result
     return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)

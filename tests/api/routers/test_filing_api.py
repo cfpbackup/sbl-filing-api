@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 from http import HTTPStatus
 import httpx
@@ -25,6 +26,7 @@ from sbl_filing_api.entities.models.dto import ContactInfoDTO
 from sbl_filing_api.entities.models.model_enums import UserActionType
 from sbl_filing_api.routers.dependencies import verify_lei
 from sbl_filing_api.services import submission_processor
+from sbl_filing_api.services.multithread_handler import handle_submission, check_future
 
 from sqlalchemy.exc import IntegrityError
 from tempfile import NamedTemporaryFile
@@ -217,12 +219,12 @@ class TestFilingApi:
 
         client = TestClient(app_fixture)
         res = client.get("/v1/filing/institutions/1234567890/filings/2024/submissions/1")
-        mock.assert_called_with(ANY, 1)
+        mock.assert_called_with(incoming_session=ANY, submission_id=1)
         assert res.status_code == 200
 
         mock.return_value = None
         res = client.get("/v1/filing/institutions/1234567890/filings/2024/submissions/1")
-        mock.assert_called_with(ANY, 1)
+        mock.assert_called_with(incoming_session=ANY, submission_id=1)
         assert res.status_code == 204
 
     def test_authed_upload_file(
@@ -253,10 +255,15 @@ class TestFilingApi:
 
         mock_validate_file = mocker.patch("sbl_filing_api.services.submission_processor.validate_file_processable")
         mock_validate_file.return_value = None
+
         mock_upload = mocker.patch("sbl_filing_api.services.submission_processor.upload_to_storage")
         mock_upload.return_value = None
-        mock_validate_submission = mocker.patch("sbl_filing_api.services.submission_processor.validation_monitor")
-        mock_validate_submission.return_value = None
+
+        mock_validate_submission = mocker.patch("concurrent.futures.ProcessPoolExecutor.submit")
+        mock_validate_submission.return_value = asyncio.Future()
+
+        mock_background_task = mocker.patch("fastapi.BackgroundTasks.add_task")
+
         async_mock = AsyncMock(return_value=return_sub)
         mock_add_submission = mocker.patch(
             "sbl_filing_api.entities.repos.submission_repo.add_submission", side_effect=async_mock
@@ -272,7 +279,12 @@ class TestFilingApi:
 
         res = client.post("/v1/filing/institutions/1234567890/filings/2024/submissions", files=files)
         mock_add_submission.assert_called_with(ANY, 1, "submission.csv", user_action_submit.id)
-        mock_validate_submission.assert_called_with("2024", "1234567890", return_sub, open(submission_csv, "rb").read())
+        mock_validate_submission.assert_called_with(
+            handle_submission, "2024", "1234567890", return_sub, open(submission_csv, "rb").read(), ANY
+        )
+        assert mock_validate_submission.call_args.args[5]["continue"]
+        mock_background_task.assert_called_with(check_future, mock_validate_submission.return_value, return_sub.id, ANY)
+        assert mock_background_task.call_args.args[3]["continue"]
         assert mock_update_submission.call_args.args[0].state == SubmissionState.SUBMISSION_UPLOADED
         assert res.status_code == 200
         assert res.json()["id"] == 1

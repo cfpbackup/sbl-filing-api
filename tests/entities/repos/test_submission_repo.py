@@ -335,7 +335,7 @@ class TestSubmissionRepo:
         assert res.validation_ruleset_version == "v1"
 
     async def test_get_submission(self, query_session: AsyncSession):
-        res = await repo.get_submission(query_session, submission_id=1)
+        res = await repo.get_submission(incoming_session=query_session, submission_id=1)
         assert res.id == 1
         assert res.filing == 1
         assert res.state == SubmissionState.SUBMISSION_UPLOADED
