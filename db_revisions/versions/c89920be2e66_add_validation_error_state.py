@@ -1,7 +1,7 @@
 """Add VALIDATION_ERROR state
 
 Revision ID: c89920be2e66
-Revises: 102fb94a24cc
+Revises: 3f7e610035a6
 Create Date: 2024-04-18 13:06:48.162639
 
 """
@@ -12,7 +12,7 @@ from alembic import op, context
 
 # revision identifiers, used by Alembic.
 revision: str = "c89920be2e66"
-down_revision: Union[str, None] = "102fb94a24cc"
+down_revision: Union[str, None] = "3f7e610035a6"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
