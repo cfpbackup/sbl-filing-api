@@ -5,6 +5,7 @@ class UserActionType(str, Enum):
     SUBMIT = "SUBMIT"
     ACCEPT = "ACCEPT"
     SIGN = "SIGN"
+    CREATE = "CREATE"
 
 
 class SubmissionState(str, Enum):
