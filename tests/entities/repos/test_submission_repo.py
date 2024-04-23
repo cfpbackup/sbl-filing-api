@@ -247,7 +247,6 @@ class TestSubmissionRepo:
         assert res.creator.action_type == UserActionType.CREATE
 
     async def test_modify_filing(self, transaction_session: AsyncSession):
-
         user_action_create = await repo.add_user_action(
             transaction_session,
             user_id="123456-7890-ABCDEF-GHIJ",
