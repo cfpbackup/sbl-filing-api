@@ -3,7 +3,7 @@ import asyncio
 
 from io import BytesIO
 from fastapi import UploadFile
-from regtech_data_validator.create_schemas import validate_phases
+from regtech_data_validator.create_schemas import validate_phases, ValidationPhase
 from regtech_data_validator.data_formatters import df_to_json, df_to_download
 from regtech_data_validator.checks import Severity
 import pandas as pd
@@ -35,7 +35,7 @@ async def validation_monitor(period_code: str, lei: str, submission: SubmissionD
             stack_info=True,
         )
         submission.state = SubmissionState.VALIDATION_EXPIRED
-        update_submission(submission)
+        await update_submission(submission)
 
 
 def validate_file_processable(file: UploadFile) -> None:
@@ -103,7 +103,7 @@ async def validate_and_update_submission(
             )
         else:
             submission.state = SubmissionState.VALIDATION_SUCCESSFUL
-        submission.validation_json = json.loads(df_to_json(result[1]))
+        submission.validation_json = build_validation_results(result)
         submission_report = df_to_download(result[1])
         await upload_to_storage(
             period_code, lei, str(submission.id) + REPORT_QUALIFIER, submission_report.encode("utf-8")
@@ -119,3 +119,32 @@ async def validate_and_update_submission(
         log.error("The file is malformed", re, exc_info=True, stack_info=True)
         submission.state = SubmissionState.SUBMISSION_UPLOAD_MALFORMED
         await update_submission(submission)
+
+    except Exception as e:
+        log.error(
+            f"Validation for submission {submission.id} did not complete due to an unexpected error.",
+            e,
+            exc_info=True,
+            stack_info=True,
+        )
+        submission.state = SubmissionState.VALIDATION_ERROR
+        await update_submission(submission)
+
+
+def build_validation_results(result):
+    val_json = json.loads(df_to_json(result[1]))
+    val_res = {"syntax_errors":{}}
+
+    if result[2] == ValidationPhase.SYNTACTICAL.value:
+        val_res["syntax_errors"]["count"] = len(val_json)
+        val_res["syntax_errors"]["details"] = val_json
+    else:
+        errors_list = [e for e in val_json if e["validation"]["severity"] == Severity.ERROR.value]
+        warnings_list = [e for e in val_json if e["validation"]["severity"] == Severity.WARNING.value]
+        val_res = {
+            "syntax_errors": {"count": 0, "details": []},
+            "logic_errors": {"count": len(errors_list), "details": errors_list},
+            "logic_warnings": {"count": len(warnings_list), "details": warnings_list},
+        }
+
+    return val_res
