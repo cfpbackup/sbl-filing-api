@@ -17,6 +17,7 @@ from sbl_filing_api.entities.models.dao import (
     SubmissionState,
     ContactInfoDAO,
     UserActionDAO,
+    UserActionDAO,
 )
 from sbl_filing_api.entities.models.dto import FilingPeriodDTO, FilingDTO, ContactInfoDTO, UserActionDTO
 from sbl_filing_api.entities.models.model_enums import UserActionType
@@ -247,8 +248,25 @@ class TestSubmissionRepo:
         assert res.creator.action_type == UserActionType.CREATE
 
     async def test_modify_filing(self, transaction_session: AsyncSession):
-        mod_filing = FilingDTO(
+        user_action_create = UserActionDAO(
+            id=4,
+            user_id="123456-7890-ABCDEF-GHIJ",
+            user_name="Test Creator",
+            user_email="test@local.host",
+            action_type=UserActionType.CREATE,
+            timestamp=datetime.datetime.now(),
+        )
+        """mod_filing = FilingDTO(
             id=3, lei="ZYXWVUTSRQP", institution_snapshot_id="Snapshot-2", filing_period="2024", tasks=[], creator_id=4
+        )"""
+
+        mod_filing = FilingDAO(
+            id=3,
+            lei="ZYXWVUTSRQP",
+            institution_snapshot_id="Snapshot-2",
+            filing_period="2024",
+            tasks=[],
+            creator=user_action_create,
         )
 
         res = await repo.upsert_filing(transaction_session, mod_filing)

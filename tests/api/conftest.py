@@ -6,15 +6,12 @@ from pytest_mock import MockerFixture
 from unittest.mock import Mock
 import pandas as pd
 
-from sbl_filing_api.entities.models.dao import (
-    FilingPeriodDAO,
-    FilingType,
-    FilingDAO,
-    ContactInfoDAO,
-)
+from sbl_filing_api.entities.models.dao import FilingPeriodDAO, FilingType, FilingDAO, ContactInfoDAO, UserActionDAO
 
 from regtech_api_commons.models.auth import AuthenticatedUser
 from starlette.authentication import AuthCredentials, UnauthenticatedUser
+
+from sbl_filing_api.entities.models.model_enums import UserActionType
 
 
 @pytest.fixture
@@ -88,6 +85,7 @@ def get_filing_mock(mocker: MockerFixture) -> Mock:
             phone="112-345-6789",
             email="test1@cfpb.gov",
         ),
+        creator_id=1,
     )
     return mock
 
@@ -113,7 +111,7 @@ def post_filing_mock(mocker: MockerFixture) -> Mock:
             phone="312-345-6789",
             email="test3@cfpb.gov",
         ),
-        creator_id=4,
+        creator_id=1,
     )
     return mock
 
