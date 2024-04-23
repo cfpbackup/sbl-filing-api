@@ -16,14 +16,14 @@ from sbl_filing_api.entities.models.dao import (
     FilingTaskState,
     SubmissionState,
     ContactInfoDAO,
-    AccepterDAO,
-    SubmitterDAO,
+    UserActionDAO,
 )
 from sbl_filing_api.entities.models.dto import (
     FilingPeriodDTO,
     FilingDTO,
     ContactInfoDTO,
 )
+from sbl_filing_api.entities.models.model_enums import UserActionType
 from sbl_filing_api.entities.repos import submission_repo as repo
 from regtech_api_commons.models.auth import AuthenticatedUser
 from pytest_mock import MockerFixture
@@ -82,34 +82,79 @@ class TestSubmissionRepo:
         )
         transaction_session.add(filing_task1)
 
+        user_action1 = UserActionDAO(
+            id=1,
+            user_id="test@local.host",
+            user_name="signer name",
+            user_email="test@local.host",
+            action_type=UserActionType.SIGN,
+            timestamp=dt.now(),
+        )
+        user_action2 = UserActionDAO(
+            id=2,
+            user_id="test@local.host",
+            user_name="submitter name",
+            user_email="test@local.host",
+            action_type=UserActionType.SUBMIT,
+            timestamp=dt.now(),
+        )
+        user_action3 = UserActionDAO(
+            id=3,
+            user_id="test@local.host",
+            user_name="accepter name",
+            user_email="test@local.host",
+            action_type=UserActionType.ACCEPT,
+            timestamp=dt.now(),
+        )
+        transaction_session.add(user_action1)
+        transaction_session.add(user_action2)
+        transaction_session.add(user_action3)
+
         submission1 = SubmissionDAO(
             id=1,
             filing=1,
+            submitter_id=2,
             state=SubmissionState.SUBMISSION_UPLOADED,
             validation_ruleset_version="v1",
             submission_time=dt.now(),
             filename="file1.csv",
         )
+
         submission2 = SubmissionDAO(
             id=2,
             filing=2,
+            submitter_id=2,
             state=SubmissionState.SUBMISSION_UPLOADED,
             validation_ruleset_version="v1",
-            submission_time=(dt.now() - datetime.timedelta(seconds=1000)),
+            submission_time=(dt.now() - datetime.timedelta(seconds=200)),
             filename="file2.csv",
         )
         submission3 = SubmissionDAO(
             id=3,
             filing=2,
+            submitter_id=2,
             state=SubmissionState.SUBMISSION_UPLOADED,
             validation_ruleset_version="v1",
             submission_time=dt.now(),
             filename="file3.csv",
         )
+        submission4 = SubmissionDAO(
+            id=4,
+            filing=1,
+            state=SubmissionState.SUBMISSION_UPLOADED,
+            validation_ruleset_version="v1",
+            submission_time=(dt.now() - datetime.timedelta(seconds=400)),
+            filename="file4.csv",
+        )
+        submission1.submitter = user_action2
+        submission2.submitter = user_action2
+        submission3.submitter = user_action2
+        submission4.submitter = user_action2
 
         transaction_session.add(submission1)
         transaction_session.add(submission2)
         transaction_session.add(submission3)
+        transaction_session.add(submission4)
 
         contact_info1 = ContactInfoDAO(
             id=1,
@@ -144,25 +189,6 @@ class TestSubmissionRepo:
         transaction_session.add(contact_info1)
         transaction_session.add(contact_info2)
 
-        accepter1 = AccepterDAO(
-            id=1,
-            submission=3,
-            accepter="test@local.host",
-            accepter_name="test accepter name",
-            accepter_email="test@local.host",
-            acception_time=dt.now(),
-        )
-        transaction_session.add(accepter1)
-
-        submitter1 = SubmitterDAO(
-            id=1,
-            submission=3,
-            submitter="test@local.host",
-            submitter_name="test submitter name",
-            submitter_email="test@local.host",
-        )
-        transaction_session.add(submitter1)
-
         await transaction_session.commit()
 
     async def test_add_filing_period(self, transaction_session: AsyncSession):
@@ -194,7 +220,7 @@ class TestSubmissionRepo:
         assert res.id == 4
         assert res.filing_period == "2024"
         assert res.lei == "12345ABCDE"
-        assert res.institution_snapshot_id == "v1"
+        assert res.institution_snapshot_id is None
 
     async def test_modify_filing(self, transaction_session: AsyncSession):
         mod_filing = FilingDTO(
@@ -234,19 +260,6 @@ class TestSubmissionRepo:
         assert filing_task_states[0].change_timestamp.timestamp() == pytest.approx(
             seconds_now, abs=1.5
         )  # allow for possible 1.5 second difference
-
-    async def test_add_signature(
-        self, query_session: AsyncSession, transaction_session: AsyncSession, authed_user_mock: AuthenticatedUser
-    ):
-        await repo.add_signature(transaction_session, filing_id=1, user=authed_user_mock)
-        filing = await repo.get_filing(query_session, lei="1234567890", filing_period="2024")
-
-        assert filing.signatures[0].id == 1
-        assert filing.signatures[0].signer_id == "123456-7890-ABCDEF-GHIJ"
-        assert filing.signatures[0].signer_name == "Test User"
-        assert filing.signatures[0].signer_email == "test@local.host"
-        assert filing.signatures[0].filing == 1
-        assert filing.signatures[0].signed_date.timestamp() == pytest.approx(dt.utcnow().timestamp(), abs=1.0)
 
     async def test_add_filing_task(self, query_session: AsyncSession, transaction_session: AsyncSession):
         user = AuthenticatedUser.from_claim({"preferred_username": "testuser"})
@@ -330,8 +343,8 @@ class TestSubmissionRepo:
 
     async def test_get_submissions(self, query_session: AsyncSession):
         res = await repo.get_submissions(query_session)
-        assert len(res) == 3
-        assert {1, 2, 3} == set([s.id for s in res])
+        assert len(res) == 4
+        assert {1, 2, 3, 4} == set([s.id for s in res])
         assert res[1].filing == 2
         assert res[2].state == SubmissionState.SUBMISSION_UPLOADED
 
@@ -346,21 +359,38 @@ class TestSubmissionRepo:
         assert len(res) == 0
 
     async def test_add_submission(self, transaction_session: AsyncSession):
-        res = await repo.add_submission(
+        user_action_submit = await repo.add_user_action(
             transaction_session,
-            filing_id=1,
-            filename="file1.csv",
+            user_id="123456-7890-ABCDEF-GHIJ",
+            user_name="test submitter",
+            user_email="test@local.host",
+            action_type=UserActionType.SUBMIT,
         )
-        assert res.id == 4
+
+        res = await repo.add_submission(
+            transaction_session, filing_id=1, filename="file1.csv", submitter_id=user_action_submit.id
+        )
+        assert res.id == 5
         assert res.filing == 1
         assert res.state == SubmissionState.SUBMISSION_STARTED
+        assert res.submitter.id == user_action_submit.id
+        assert res.submitter.user_id == user_action_submit.user_id
+        assert res.submitter.user_name == user_action_submit.user_name
+        assert res.submitter.user_email == user_action_submit.user_email
+        assert res.submitter.action_type == UserActionType.SUBMIT
 
     async def test_update_submission(self, session_generator: async_scoped_session):
+        user_action_submit = UserActionDAO(
+            id=2,
+            user_id="123456-7890-ABCDEF-GHIJ",
+            user_name="test submitter",
+            user_email="test@local.host",
+            action_type=UserActionType.SUBMIT,
+            timestamp=datetime.datetime.now(),
+        )
         async with session_generator() as add_session:
             res = await repo.add_submission(
-                add_session,
-                filing_id=1,
-                filename="file1.csv",
+                add_session, filing_id=1, filename="file1.csv", submitter_id=user_action_submit.id
             )
 
         res.state = SubmissionState.VALIDATION_IN_PROGRESS
@@ -368,9 +398,9 @@ class TestSubmissionRepo:
 
         async def query_updated_dao():
             async with session_generator() as search_session:
-                stmt = select(SubmissionDAO).filter(SubmissionDAO.id == 4)
+                stmt = select(SubmissionDAO).filter(SubmissionDAO.id == 5)
                 new_res1 = await search_session.scalar(stmt)
-                assert new_res1.id == 4
+                assert new_res1.id == 5
                 assert new_res1.filing == 1
                 assert new_res1.state == SubmissionState.VALIDATION_IN_PROGRESS
 
@@ -385,9 +415,9 @@ class TestSubmissionRepo:
 
         async def query_updated_dao():
             async with session_generator() as search_session:
-                stmt = select(SubmissionDAO).filter(SubmissionDAO.id == 4)
+                stmt = select(SubmissionDAO).filter(SubmissionDAO.id == 5)
                 new_res2 = await search_session.scalar(stmt)
-                assert new_res2.id == 4
+                assert new_res2.id == 5
                 assert new_res2.filing == 1
                 assert new_res2.state == SubmissionState.VALIDATION_WITH_ERRORS
                 assert new_res2.validation_json == validation_json
@@ -483,49 +513,28 @@ class TestSubmissionRepo:
         assert filing.contact_info.phone == "212-345-6789_upd"
         assert filing.contact_info.email == "test2_upd@cfpb.gov"
 
-    async def test_get_accepter(self, query_session: AsyncSession):
-        res = await repo.get_accepter(session=query_session, submission_id=3)
+    async def test_get_user_action(self, query_session: AsyncSession):
+        res = await repo.get_user_action(session=query_session, id=3)
 
-        assert res.accepter == "test@local.host"
-        assert res.accepter_name == "test accepter name"
-        assert res.accepter_email == "test@local.host"
+        assert res.user_id == "test@local.host"
+        assert res.user_name == "accepter name"
+        assert res.user_email == "test@local.host"
+        assert res.action_type == UserActionType.ACCEPT
 
-    async def test_add_accepter(self, transaction_session: AsyncSession):
-        accepter = await repo.add_accepter(
+    async def test_add_user_action(self, transaction_session: AsyncSession):
+        accepter = await repo.add_user_action(
             session=transaction_session,
-            submission_id=2,
-            accepter="test2@cfpb.gov",
-            accepter_name="test2 accepter name",
-            accepter_email="test2@cfpb.gov",
+            user_id="test2@cfpb.gov",
+            user_name="test2 accepter name",
+            user_email="test2@cfpb.gov",
+            action_type=UserActionType.ACCEPT,
         )
 
-        assert accepter.id == 2
-        assert accepter.submission == 2
-        assert accepter.accepter == "test2@cfpb.gov"
-        assert accepter.accepter_name == "test2 accepter name"
-        assert accepter.accepter_email == "test2@cfpb.gov"
-
-    async def test_get_submitter(self, query_session: AsyncSession):
-        res = await repo.get_submitter(session=query_session, submission_id=3)
-
-        assert res.submitter == "test@local.host"
-        assert res.submitter_name == "test submitter name"
-        assert res.submitter_email == "test@local.host"
-
-    async def test_add_submitter(self, transaction_session: AsyncSession):
-        submitter = await repo.add_submitter(
-            session=transaction_session,
-            submission_id=2,
-            submitter="test2@cfpb.gov",
-            submitter_name="test2 submitter name",
-            submitter_email="test2@cfpb.gov",
-        )
-
-        assert submitter.id == 2
-        assert submitter.submission == 2
-        assert submitter.submitter == "test2@cfpb.gov"
-        assert submitter.submitter_name == "test2 submitter name"
-        assert submitter.submitter_email == "test2@cfpb.gov"
+        assert accepter.id == 4
+        assert accepter.user_id == "test2@cfpb.gov"
+        assert accepter.user_name == "test2 accepter name"
+        assert accepter.user_email == "test2@cfpb.gov"
+        assert accepter.action_type == UserActionType.ACCEPT
 
     def get_error_json(self):
         df_columns = [
