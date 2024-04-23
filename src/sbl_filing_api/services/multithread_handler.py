@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 
 
 def handle_submission(period_code: str, lei: str, submission: SubmissionDAO, content: bytes, exec_check):
-    logger.error("BANG! Getting new loop")
     loop = asyncio.new_event_loop()
     try:
         coro = validate_and_update_submission(period_code, lei, submission, content, exec_check)
@@ -28,6 +27,6 @@ async def check_future(future, submission_id, exec_check):
     if not future.done():
         exec_check["continue"] = False
         await repo.expire_submission(submission_id)
-        logger.warn(
+        logger.warning(
             f"Validation for submission {submission_id} did not complete within the expected timeframe, will be set to VALIDATION_EXPIRED."
         )

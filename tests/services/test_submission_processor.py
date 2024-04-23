@@ -1,10 +1,9 @@
-import asyncio
 import pytest
 
 from http import HTTPStatus
 from sbl_filing_api.services import submission_processor
 from fastapi import HTTPException
-from unittest.mock import Mock, ANY, AsyncMock
+from unittest.mock import Mock, ANY
 from pytest_mock import MockerFixture
 from sbl_filing_api.config import FsProtocol, settings
 from sbl_filing_api.entities.models.dao import SubmissionDAO, SubmissionState
@@ -227,11 +226,16 @@ class TestSubmissionProcessor:
         assert mock_update_submission.mock_calls[0].args[0].state == SubmissionState.VALIDATION_IN_PROGRESS
         assert mock_update_submission.mock_calls[1].args[0].state == SubmissionState.SUBMISSION_UPLOAD_MALFORMED
 
-    @pytest.mark.asyncio
-    async def test_validation_monitor(
+    async def test_validation_expired(
         self,
         mocker: MockerFixture,
+        validate_submission_mock: Mock,
+        error_submission_mock: Mock,
+        df_to_json_mock: Mock,
+        df_to_download_mock: Mock,
     ):
+        log_mock = mocker.patch("sbl_filing_api.services.submission_processor.log")
+
         mock_sub = SubmissionDAO(
             id=1,
             filing=1,
@@ -239,27 +243,18 @@ class TestSubmissionProcessor:
             filename="submission.csv",
         )
 
-        async def mock_validate_and_update_submission(
-            period_code: str, lei: str, submission: SubmissionDAO, content: bytes
-        ):
-            await asyncio.sleep(5)
-            return
-
-        update_sub_patch = mocker.patch("sbl_filing_api.services.submission_processor.update_submission")
-        mocker.patch("sbl_filing_api.services.submission_processor.settings.expired_submission_check_secs", 4)
-        log_patch = mocker.patch("sbl_filing_api.services.submission_processor.log")
-
-        validate_patch = mocker.patch(
-            "sbl_filing_api.services.submission_processor.validate_and_update_submission", new_callable=AsyncMock
+        mock_update_submission = mocker.patch("sbl_filing_api.services.submission_processor.update_submission")
+        mock_update_submission.return_value = SubmissionDAO(
+            id=1,
+            filing=1,
+            state=SubmissionState.VALIDATION_IN_PROGRESS,
+            filename="submission.csv",
         )
-        validate_patch.side_effect = mock_validate_and_update_submission
 
-        await submission_processor.validation_monitor("2024", "1234TESTLEI000000001", mock_sub, b"\x00\x00")
-
-        assert update_sub_patch.mock_calls[0].args[0].state == SubmissionState.VALIDATION_EXPIRED
-        assert log_patch.mock_calls[0].warn.assert_called_with(
-            "Validation for submission 1 did not complete within the expected timeframe, will be set to VALIDATION_EXPIRED.",
-            ANY,
-            exc_info=True,
-            stack_info=True,
+        await submission_processor.validate_and_update_submission(
+            "2024", "123456790", mock_sub, None, {"continue": False}
         )
+
+        # second update shouldn't be called
+        assert len(mock_update_submission.mock_calls) == 1
+        log_mock.warning.assert_called_with("Submission 1 is expired, will not be updating final state with results.")
