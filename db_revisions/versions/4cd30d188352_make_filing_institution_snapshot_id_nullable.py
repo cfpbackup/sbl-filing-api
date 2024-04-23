@@ -1,7 +1,7 @@
 """make filing institution_snapshot_id field nullable
 
 Revision ID: 4cd30d188352
-Revises: ccc50ec18a7e
+Revises: 0040045eae14
 Create Date: 2024-04-16 09:33:16.055484
 
 """

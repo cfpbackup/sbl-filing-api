@@ -1,6 +1,12 @@
 from enum import Enum
 
 
+class UserActionType(str, Enum):
+    SUBMIT = "SUBMIT"
+    ACCEPT = "ACCEPT"
+    SIGN = "SIGN"
+
+
 class SubmissionState(str, Enum):
     SUBMISSION_ACCEPTED = "SUBMISSION_ACCEPTED"
     SUBMISSION_STARTED = "SUBMISSION_STARTED"

@@ -3,6 +3,7 @@ import logging
 from fastapi import Depends, Request, UploadFile, BackgroundTasks, status, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
 from regtech_api_commons.api.router_wrapper import Router
+from sbl_filing_api.entities.models.model_enums import UserActionType
 from sbl_filing_api.services import submission_processor
 from typing import Annotated, List
 
@@ -97,8 +98,15 @@ async def sign_filing(request: Request, lei: str, period_code: str):
             content=f"Cannot sign filing. Filing for {lei} for period {period_code} does not have institution snapshot id defined.",
         )
     """
-    sig = await repo.add_signature(request.state.db_session, filing_id=filing.id, user=request.user)
-    filing.confirmation_id = lei + "-" + period_code + "-" + str(latest_sub.id) + "-" + str(sig.signed_date.timestamp())
+
+    sig = await repo.add_user_action(
+        request.state.db_session,
+        user_id=request.user.id,
+        user_name=request.user.name,
+        user_email=request.user.email,
+        action_type=UserActionType.SIGN,
+    )
+    filing.confirmation_id = lei + "-" + period_code + "-" + str(latest_sub.id) + "-" + str(sig.timestamp.timestamp())
     filing.signatures.append(sig)
     return await repo.upsert_filing(request.state.db_session, filing)
 
@@ -117,36 +125,42 @@ async def upload_file(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content=f"There is no Filing for LEI {lei} in period {period_code}, unable to submit file.",
         )
-
-    submission = await repo.add_submission(request.state.db_session, filing.id, file.filename)
     try:
-        submitter = await repo.add_submitter(
+        submitter = await repo.add_user_action(
             request.state.db_session,
-            submission_id=submission.id,
-            submitter=request.user.id,
-            submitter_name=request.user.name,
-            submitter_email=request.user.email,
+            user_id=request.user.id,
+            user_name=request.user.name,
+            user_email=request.user.email,
+            action_type=UserActionType.SUBMIT,
         )
-        submission.submitter = submitter
-        submission = await repo.update_submission(submission)
-        await submission_processor.upload_to_storage(
-            period_code, lei, submission.id, content, file.filename.split(".")[-1]
-        )
+        submission = await repo.add_submission(request.state.db_session, filing.id, file.filename, submitter.id)
+        try:
+            await submission_processor.upload_to_storage(
+                period_code, lei, submission.id, content, file.filename.split(".")[-1]
+            )
 
-        submission.state = SubmissionState.SUBMISSION_UPLOADED
-        submission = await repo.update_submission(submission)
+            submission.state = SubmissionState.SUBMISSION_UPLOADED
+            submission = await repo.update_submission(submission)
+        except Exception as e:
+            logger.error(
+                f"Error while trying to process Submission {submission.id}", e, exec_info=True, stack_info=True
+            )
+            submission.state = SubmissionState.UPLOAD_FAILED
+            submission = await repo.update_submission(submission)
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=f"{e}",
+            )
+        background_tasks.add_task(submission_processor.validation_monitor, period_code, lei, submission, content)
+
+        return submission
+
     except Exception as e:
-        logger.error(f"Error while trying to process Submission {submission.id}", e, exec_info=True, stack_info=True)
-        submission.state = SubmissionState.UPLOAD_FAILED
-        submission = await repo.update_submission(submission)
+        logger.error("Error while trying to process SUBMIT User Action", e, exec_info=True, stack_info=True)
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content=f"{e}",
         )
-
-    background_tasks.add_task(submission_processor.validation_monitor, period_code, lei, submission, content)
-
-    return submission
 
 
 @router.get("/institutions/{lei}/filings/{period_code}/submissions", response_model=List[SubmissionDTO])
@@ -191,14 +205,15 @@ async def accept_submission(request: Request, id: int, lei: str, period_code: st
             content=f"Submission {id} for LEI {lei} in filing period {period_code} is not in an acceptable state.  Submissions must be validated successfully or with only warnings to be accepted.",
         )
 
-    updated_accepter = await repo.add_accepter(
+    accepter = await repo.add_user_action(
         request.state.db_session,
-        submission_id=id,
-        accepter=request.user.id,
-        accepter_name=request.user.name,
-        accepter_email=request.user.email,
+        user_id=request.user.id,
+        user_name=request.user.name,
+        user_email=request.user.email,
+        action_type=UserActionType.ACCEPT,
     )
-    submission.accepter = updated_accepter
+
+    submission.accepter_id = accepter.id
     submission.state = SubmissionState.SUBMISSION_ACCEPTED
     submission = await repo.update_submission(submission, request.state.db_session)
     return submission

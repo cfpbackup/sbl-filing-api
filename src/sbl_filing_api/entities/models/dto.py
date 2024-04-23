@@ -1,26 +1,16 @@
 from datetime import datetime
 from typing import Dict, Any, List
 from pydantic import BaseModel, ConfigDict, Field
-from sbl_filing_api.entities.models.model_enums import FilingType, FilingTaskState, SubmissionState
+from sbl_filing_api.entities.models.model_enums import FilingType, FilingTaskState, SubmissionState, UserActionType
 
 
-class SubmitterDTO(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
+class UserActionDTO(BaseModel):
     id: int | None = None
-    submitter: str
-    submitter_name: str | None = None
-    submitter_email: str
-
-
-class AccepterDTO(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int | None = None
-    accepter: str
-    accepter_name: str | None = None
-    accepter_email: str
-    acception_time: datetime | None = None
+    user_id: str
+    user_name: str
+    user_email: str
+    timestamp: datetime
+    action_type: UserActionType
 
 
 class SubmissionDTO(BaseModel):
@@ -32,8 +22,8 @@ class SubmissionDTO(BaseModel):
     validation_json: List[Dict[str, Any]] | None = None
     submission_time: datetime | None = None
     filename: str
-    submitter: SubmitterDTO | None = None
-    accepter: AccepterDTO | None = None
+    submitter: UserActionDTO
+    accepter: UserActionDTO | None = None
 
 
 class FilingTaskDTO(BaseModel):
@@ -70,14 +60,6 @@ class ContactInfoDTO(BaseModel):
     phone: str
 
 
-class SignatureDTO(BaseModel):
-    id: int
-    signer_id: str
-    signer_name: str | None = None
-    signer_email: str
-    signed_date: datetime
-
-
 class FilingDTO(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -88,7 +70,7 @@ class FilingDTO(BaseModel):
     institution_snapshot_id: str | None = None
     contact_info: ContactInfoDTO | None = None
     confirmation_id: str | None = None
-    signatures: List[SignatureDTO] = []
+    signatures: List[UserActionDTO] = []
 
 
 class FilingPeriodDTO(BaseModel):
