@@ -163,7 +163,7 @@ async def upload_file(
         return submission
 
     except Exception as e:
-        logger.error("Error while trying to process SUBMIT User Action", e, exec_info=True, stack_info=True)
+        logger.error("Error while trying to process SUBMIT User Action", e, exc_info=True, stack_info=True)
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content=f"{e}",
