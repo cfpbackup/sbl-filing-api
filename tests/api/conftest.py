@@ -6,12 +6,10 @@ from pytest_mock import MockerFixture
 from unittest.mock import Mock
 import pandas as pd
 
-from sbl_filing_api.entities.models.dao import FilingPeriodDAO, FilingType, FilingDAO, ContactInfoDAO, UserActionDAO
+from sbl_filing_api.entities.models.dao import FilingPeriodDAO, FilingType, FilingDAO, ContactInfoDAO
 
 from regtech_api_commons.models.auth import AuthenticatedUser
 from starlette.authentication import AuthCredentials, UnauthenticatedUser
-
-from sbl_filing_api.entities.models.model_enums import UserActionType
 
 
 @pytest.fixture
