@@ -102,7 +102,6 @@ def build_validation_results(result):
     val_res = {}
 
     if result[2] == ValidationPhase.SYNTACTICAL.value:
-        val_res["syntax_errors"] = {"count": 0, "details": []}
         val_res["syntax_errors"]["details"] = val_json
         val_res["syntax_errors"]["count"] = len(val_res["syntax_errors"]["details"])
     else:
@@ -116,8 +115,7 @@ def build_validation_results(result):
                 val_res["logic_warnings"]["details"].append(v)
             elif v["validation"]["severity"] == Severity.ERROR.value:
                 val_res["logic_errors"]["details"].append(v)
-        val_res["logic_warnings"]["count"], val_res["logic_errors"]["count"] = len(
-            val_res["logic_warnings"]["details"]
-        ), len(val_res["logic_errors"]["details"])
+        val_res["logic_warnings"]["count"] = len(val_res["logic_warnings"]["details"])
+        val_res["logic_errors"]["count"] = len(val_res["logic_errors"]["details"])
 
     return val_res
