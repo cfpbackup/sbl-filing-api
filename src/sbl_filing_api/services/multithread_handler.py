@@ -14,6 +14,7 @@ def handle_submission(period_code: str, lei: str, submission: SubmissionDAO, con
     loop = asyncio.new_event_loop()
     try:
         coro = validate_and_update_submission(period_code, lei, submission, content, exec_check)
+        print(f"{coro}")
         asyncio.set_event_loop(loop)
         loop.run_until_complete(coro)
     except Exception as e:

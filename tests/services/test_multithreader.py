@@ -2,7 +2,9 @@ import asyncio
 
 from multiprocessing import Manager
 from pytest_mock import MockerFixture
-from sbl_filing_api.services.multithread_handler import check_future
+from sbl_filing_api.entities.models.dao import SubmissionDAO, SubmissionState
+from sbl_filing_api.services.multithread_handler import check_future, handle_submission
+from unittest.mock import Mock
 
 
 class TestMultithreader:
@@ -36,3 +38,27 @@ class TestMultithreader:
         assert exec_check["continue"]
         assert not repo_mock.called
         assert not log_mock.called
+
+    async def test_handler(self, mocker: MockerFixture):
+        mock_sub = SubmissionDAO(
+            id=1,
+            filing=1,
+            state=SubmissionState.SUBMISSION_UPLOADED,
+            filename="submission.csv",
+        )
+
+        validation_mock = mocker.patch("sbl_filing_api.services.multithread_handler.validate_and_update_submission")
+        mock_new_loop = mocker.patch("asyncio.new_event_loop")
+        mock_event_loop = Mock()
+        mock_new_loop.return_value = mock_event_loop
+
+        set_loop_mock = mocker.patch("asyncio.set_event_loop")
+
+        exec_check = Manager().dict()
+        exec_check["continue"] = True
+
+        handle_submission("2024", "123456789TESTBANK123", mock_sub, b"\00\00", exec_check)
+
+        set_loop_mock.assert_called_with(mock_event_loop)
+        validation_mock.assert_called_with("2024", "123456789TESTBANK123", mock_sub, b"\00\00", exec_check)
+        mock_event_loop.close.assert_called_once()
