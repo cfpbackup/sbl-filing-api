@@ -79,10 +79,9 @@ async def get_from_storage(period_code: str, lei: str, file_identifier: str, ext
         with fs.open(file_path, "r") as f:
             return f.name
     except Exception as e:
-        log.error(f"Failed to read file {file_path}:", e, exc_info=True, stack_info=True)
         raise RegTechHttpException(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR, name="Download Failure", detail="Failed to read file."
-        )
+        ) from e
 
 
 async def validate_and_update_submission(period_code: str, lei: str, submission: SubmissionDAO, content: bytes):
