@@ -4,17 +4,17 @@
 
 | Name                                                    |    Stmts |     Miss |   Branch |   BrPart |   Cover |   Missing |
 |-------------------------------------------------------- | -------: | -------: | -------: | -------: | ------: | --------: |
-| src/sbl\_filing\_api/config.py                          |       49 |        0 |        8 |        1 |     98% |    13->17 |
+| src/sbl\_filing\_api/config.py                          |       51 |        0 |        8 |        1 |     98% |    14->18 |
 | src/sbl\_filing\_api/entities/engine/engine.py          |       10 |        0 |        0 |        0 |    100% |           |
 | src/sbl\_filing\_api/entities/models/dao.py             |       93 |        5 |        0 |        0 |     95% |40, 59, 74, 94, 121 |
-| src/sbl\_filing\_api/entities/models/dto.py             |       71 |        0 |        0 |        0 |    100% |           |
+| src/sbl\_filing\_api/entities/models/dto.py             |       83 |        0 |       10 |        2 |     98% |65->69, 69->73 |
 | src/sbl\_filing\_api/entities/models/model\_enums.py    |       24 |        0 |        0 |        0 |    100% |           |
 | src/sbl\_filing\_api/entities/repos/submission\_repo.py |      111 |        0 |       18 |        2 |     98% |61->63, 68->70 |
 | src/sbl\_filing\_api/main.py                            |       33 |       11 |        2 |        0 |     69% |26-31, 35-39 |
 | src/sbl\_filing\_api/routers/dependencies.py            |       16 |        0 |        8 |        2 |     92% |12->exit, 18->exit |
 | src/sbl\_filing\_api/routers/filing.py                  |      158 |        0 |      120 |        0 |    100% |           |
 | src/sbl\_filing\_api/services/submission\_processor.py  |       73 |        0 |       14 |        0 |    100% |           |
-|                                               **TOTAL** |  **638** |   **16** |  **170** |    **5** | **97%** |           |
+|                                               **TOTAL** |  **652** |   **16** |  **180** |    **7** | **97%** |           |
 
 6 empty files skipped.
 
