@@ -112,8 +112,8 @@ async def validate_and_update_submission(period_code: str, lei: str, submission:
         )
         await update_submission(submission)
 
-    except Exception as e:
-        log.error("The file is malformed", e, exc_info=True, stack_info=True)
+    except RuntimeError as re:
+        log.error("The file is malformed", re, exc_info=True, stack_info=True)
         submission.state = SubmissionState.SUBMISSION_UPLOAD_MALFORMED
         await update_submission(submission)
 
