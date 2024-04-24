@@ -47,9 +47,99 @@ def warning_submission_mock(mocker: MockerFixture, validate_submission_mock: Moc
 
 
 @pytest.fixture(scope="function")
-def build_validation_results_mock(mocker: MockerFixture, validate_submission_mock: Mock):
+def validation_success_mock(mocker: MockerFixture, validate_submission_mock: Mock):
     mock_json_formatting = mocker.patch("sbl_filing_api.services.submission_processor.build_validation_results")
-    mock_json_formatting.return_value = "{}"
+    mock_json_formatting.return_value = """
+        {
+        "syntax_errors": {
+            "count": 0,
+            "details": []
+        },
+        "logic_errors": {
+            "count": 0,
+            "details": []
+        },
+        "logic_warnings": {
+            "count": 0,
+            "details": []
+        }
+    }"""
+    return mock_json_formatting
+
+
+@pytest.fixture(scope="function")
+def validation_syntax_errors_mock(mocker: MockerFixture, validate_submission_mock: Mock):
+    mock_json_formatting = mocker.patch("sbl_filing_api.services.submission_processor.build_validation_results")
+    mock_json_formatting.return_value = """
+        {
+        "syntax_errors": {
+            "count": 2,
+            "details": []
+        }
+    }"""
+    return mock_json_formatting
+
+
+@pytest.fixture(scope="function")
+def validation_logic_warnings_mock(mocker: MockerFixture, validate_submission_mock: Mock):
+    mock_json_formatting = mocker.patch("sbl_filing_api.services.submission_processor.build_validation_results")
+    mock_json_formatting.return_value = """
+        {
+        "syntax_errors": {
+            "count": 0,
+            "details": []
+        },
+        "logic_errors": {
+            "count": 0,
+            "details": []
+        },
+        "logic_warnings": {
+            "count": 1,
+            "details": []
+        }
+    }"""
+    return mock_json_formatting
+
+
+@pytest.fixture(scope="function")
+def validation_logic_errors_mock(mocker: MockerFixture, validate_submission_mock: Mock):
+    mock_json_formatting = mocker.patch("sbl_filing_api.services.submission_processor.build_validation_results")
+    mock_json_formatting.return_value = """
+        {
+        "syntax_errors": {
+            "count": 0,
+            "details": []
+        },
+        "logic_errors": {
+            "count": 4,
+            "details": []
+        },
+        "logic_warnings": {
+            "count": 0,
+            "details": []
+        }
+    }"""
+    return mock_json_formatting
+
+
+@pytest.fixture(scope="function")
+def validation_logic_warnings_and_errors_mock(mocker: MockerFixture, validate_submission_mock: Mock):
+    mock_json_formatting = mocker.patch("sbl_filing_api.services.submission_processor.build_validation_results")
+    mock_json_formatting.return_value = """
+        {
+        "syntax_errors": {
+            "count": 0,
+            "details": []
+        },
+        "logic_errors": {
+            "count": 3,
+            "details": []
+        },
+        "logic_warnings": {
+            "count": 2,
+            "details": []
+        }
+    }"""
     return mock_json_formatting
 
 

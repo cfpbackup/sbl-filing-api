@@ -1,4 +1,6 @@
 import asyncio
+import json
+
 import pytest
 
 from http import HTTPStatus
@@ -110,7 +112,7 @@ class TestSubmissionProcessor:
         self,
         mocker: MockerFixture,
         successful_submission_mock: Mock,
-        build_validation_results_mock: Mock,
+        validation_success_mock: Mock,
         df_to_download_mock: Mock,
     ):
         mock_sub = SubmissionDAO(
@@ -130,15 +132,19 @@ class TestSubmissionProcessor:
             "1" + submission_processor.REPORT_QUALIFIER,
             encoded_results,
         )
+        json_results = json.loads(successful_submission_mock.mock_calls[1].args[0].validation_json)
         assert successful_submission_mock.mock_calls[0].args[0].state == SubmissionState.VALIDATION_IN_PROGRESS
         assert successful_submission_mock.mock_calls[0].args[0].validation_ruleset_version == "0.1.0"
         assert successful_submission_mock.mock_calls[1].args[0].state == "VALIDATION_SUCCESSFUL"
+        assert json_results["syntax_errors"]["count"] == 0
+        assert json_results["logic_errors"]["count"] == 0
+        assert json_results["logic_warnings"]["count"] == 0
 
-    async def test_validate_and_update_warnings(
+    async def test_validate_and_update_logic_warnings(
         self,
         mocker: MockerFixture,
         warning_submission_mock: Mock,
-        build_validation_results_mock: Mock,
+        validation_logic_warnings_mock: Mock,
         df_to_download_mock: Mock,
     ):
         mock_sub = SubmissionDAO(
@@ -157,15 +163,19 @@ class TestSubmissionProcessor:
             "1" + submission_processor.REPORT_QUALIFIER,
             encoded_results,
         )
+        json_results = json.loads(warning_submission_mock.mock_calls[1].args[0].validation_json)
         assert warning_submission_mock.mock_calls[0].args[0].state == SubmissionState.VALIDATION_IN_PROGRESS
         assert warning_submission_mock.mock_calls[0].args[0].validation_ruleset_version == "0.1.0"
         assert warning_submission_mock.mock_calls[1].args[0].state == "VALIDATION_WITH_WARNINGS"
+        assert json_results["syntax_errors"]["count"] == 0
+        assert json_results["logic_errors"]["count"] == 0
+        assert json_results["logic_warnings"]["count"] > 0
 
-    async def test_validate_and_update_errors(
+    async def test_validate_and_update_syntax_errors(
         self,
         mocker: MockerFixture,
         error_submission_mock: Mock,
-        build_validation_results_mock: Mock,
+        validation_syntax_errors_mock: Mock,
         df_to_download_mock: Mock,
     ):
         mock_sub = SubmissionDAO(
@@ -185,9 +195,75 @@ class TestSubmissionProcessor:
             "1" + submission_processor.REPORT_QUALIFIER,
             encoded_results,
         )
+        json_results = json.loads(error_submission_mock.mock_calls[1].args[0].validation_json)
         assert error_submission_mock.mock_calls[0].args[0].state == SubmissionState.VALIDATION_IN_PROGRESS
         assert error_submission_mock.mock_calls[0].args[0].validation_ruleset_version == "0.1.0"
         assert error_submission_mock.mock_calls[1].args[0].state == "VALIDATION_WITH_ERRORS"
+        assert json_results["syntax_errors"]["count"] > 0
+
+    async def test_validate_and_update_logic_errors(
+        self,
+        mocker: MockerFixture,
+        error_submission_mock: Mock,
+        validation_logic_errors_mock: Mock,
+        df_to_download_mock: Mock,
+    ):
+        mock_sub = SubmissionDAO(
+            id=1,
+            filing=1,
+            state=SubmissionState.SUBMISSION_UPLOADED,
+            filename="submission.csv",
+        )
+
+        file_mock = mocker.patch("sbl_filing_api.services.submission_processor.upload_to_storage")
+
+        await submission_processor.validate_and_update_submission("2024", "123456790", mock_sub, None)
+        encoded_results = df_to_download_mock.return_value.encode("utf-8")
+        assert file_mock.mock_calls[0].args == (
+            "2024",
+            "123456790",
+            "1" + submission_processor.REPORT_QUALIFIER,
+            encoded_results,
+        )
+        json_results = json.loads(error_submission_mock.mock_calls[1].args[0].validation_json)
+        assert error_submission_mock.mock_calls[0].args[0].state == SubmissionState.VALIDATION_IN_PROGRESS
+        assert error_submission_mock.mock_calls[0].args[0].validation_ruleset_version == "0.1.0"
+        assert error_submission_mock.mock_calls[1].args[0].state == "VALIDATION_WITH_ERRORS"
+        assert json_results["syntax_errors"]["count"] == 0
+        assert json_results["logic_errors"]["count"] > 0
+        assert json_results["logic_warnings"]["count"] == 0
+
+    async def test_validate_and_update_logic_warnings_and_errors(
+        self,
+        mocker: MockerFixture,
+        error_submission_mock: Mock,
+        validation_logic_warnings_and_errors_mock: Mock,
+        df_to_download_mock: Mock,
+    ):
+        mock_sub = SubmissionDAO(
+            id=1,
+            filing=1,
+            state=SubmissionState.SUBMISSION_UPLOADED,
+            filename="submission.csv",
+        )
+
+        file_mock = mocker.patch("sbl_filing_api.services.submission_processor.upload_to_storage")
+
+        await submission_processor.validate_and_update_submission("2024", "123456790", mock_sub, None)
+        encoded_results = df_to_download_mock.return_value.encode("utf-8")
+        assert file_mock.mock_calls[0].args == (
+            "2024",
+            "123456790",
+            "1" + submission_processor.REPORT_QUALIFIER,
+            encoded_results,
+        )
+        json_results = json.loads(error_submission_mock.mock_calls[1].args[0].validation_json)
+        assert error_submission_mock.mock_calls[0].args[0].state == SubmissionState.VALIDATION_IN_PROGRESS
+        assert error_submission_mock.mock_calls[0].args[0].validation_ruleset_version == "0.1.0"
+        assert error_submission_mock.mock_calls[1].args[0].state == "VALIDATION_WITH_ERRORS"
+        assert json_results["syntax_errors"]["count"] == 0
+        assert json_results["logic_errors"]["count"] > 0
+        assert json_results["logic_warnings"]["count"] > 0
 
     async def test_validate_and_update_submission_malformed(
         self,
