@@ -217,6 +217,44 @@ class TestSubmissionProcessor:
         assert mock_update_submission.mock_calls[0].args[0].state == SubmissionState.VALIDATION_IN_PROGRESS
         assert mock_update_submission.mock_calls[1].args[0].state == SubmissionState.SUBMISSION_UPLOAD_MALFORMED
 
+    async def test_validate_exception(
+        self,
+        mocker: MockerFixture,
+    ):
+        log_mock = mocker.patch("sbl_filing_api.services.submission_processor.log")
+
+        mock_sub = SubmissionDAO(
+            id=1,
+            filing=1,
+            state=SubmissionState.SUBMISSION_UPLOADED,
+            filename="submission.csv",
+        )
+
+        mock_update_submission = mocker.patch("sbl_filing_api.services.submission_processor.update_submission")
+        mock_update_submission.return_value = SubmissionDAO(
+            id=1,
+            filing=1,
+            state=SubmissionState.VALIDATION_IN_PROGRESS,
+            filename="submission.csv",
+        )
+
+        mocker.patch("pandas.read_csv")
+
+        mock_validation = mocker.patch("sbl_filing_api.services.submission_processor.validate_phases")
+        mock_validation.side_effect = KeyError(
+            "None of ['validation_id', 'record_no', 'field_name'] are in the columns"
+        )
+
+        await submission_processor.validate_and_update_submission("2024", "123456790", mock_sub, b"\x00\x00")
+
+        assert mock_update_submission.mock_calls[1].args[0].state == SubmissionState.VALIDATION_ERROR
+        assert log_mock.mock_calls[0].error.assert_called_with(
+            "Validation for submission 1 did not complete due to an unexpected error.",
+            mock_validation.side_effect,
+            exc_info=True,
+            stack_info=True,
+        )
+
     @pytest.mark.asyncio
     async def test_validation_monitor(
         self,
