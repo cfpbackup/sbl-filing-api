@@ -160,7 +160,7 @@ def test_migration_to_8eaef8ce4c23(alembic_runner: MigrationContext, alembic_eng
         "hq_address_city",
         "hq_address_state",
         "hq_address_zip",
-        "phone_number",
+        "phone",
         "email",
         "filing",
     } == set([c["name"] for c in inspector.get_columns("contact_info")])
@@ -371,3 +371,12 @@ def test_migration_to_3f7e610035a6(alembic_runner: MigrationContext, alembic_eng
         and "user_action" == filing_fks[1]["referred_table"]
         and "id" in filing_fks[1]["referred_columns"]
     )
+
+
+def test_migration_to_e1b0d044c840(alembic_runner: MigrationContext, alembic_engine: Engine):
+    alembic_runner.migrate_up_to("e1b0d044c840")
+
+    inspector = sqlalchemy.inspect(alembic_engine)
+
+    assert "phone_number" in [c["name"] for c in inspector.get_columns("contact_info")]
+    assert "phone" not in [c["name"] for c in inspector.get_columns("contact_info")]
