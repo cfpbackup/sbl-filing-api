@@ -160,7 +160,7 @@ def test_migration_to_8eaef8ce4c23(alembic_runner: MigrationContext, alembic_eng
         "hq_address_city",
         "hq_address_state",
         "hq_address_zip",
-        "phone",
+        "phone_number",
         "email",
         "filing",
     } == set([c["name"] for c in inspector.get_columns("contact_info")])

@@ -8,7 +8,7 @@ from regtech_data_validator.data_formatters import df_to_json, df_to_download
 from regtech_data_validator.checks import Severity
 import pandas as pd
 import importlib.metadata as imeta
-from sbl_filing_api.entities.models.dao import SubmissionDAO, SubmissionState
+from sbl_filing_api.entities.models.dao import ContactInfoDAO, SubmissionDAO, SubmissionState
 from sbl_filing_api.entities.repos.submission_repo import update_submission
 from http import HTTPStatus
 from fastapi import HTTPException

@@ -32,7 +32,7 @@ def upgrade() -> None:
         sa.Column("hq_address_state", sa.String, nullable=False),
         sa.Column("hq_address_zip", sa.String, nullable=False),
         sa.Column("email", sa.String, nullable=False),
-        sa.Column("phone", sa.String, nullable=False),
+        sa.Column("phone_number", sa.String, nullable=False),
         sa.PrimaryKeyConstraint("id", name="contact_info_pkey"),
         sa.ForeignKeyConstraint(["filing"], ["filing.id"], name="contact_info_filing_fkey"),
     )
