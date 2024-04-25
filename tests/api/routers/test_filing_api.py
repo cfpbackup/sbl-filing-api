@@ -28,6 +28,7 @@ from sbl_filing_api.services import submission_processor
 
 from sqlalchemy.exc import IntegrityError
 from tempfile import NamedTemporaryFile
+from sbl_filing_api.config import regex_configs
 
 
 class TestFilingApi:
@@ -49,19 +50,19 @@ class TestFilingApi:
 
     def test_unauthed_get_filing(self, app_fixture: FastAPI, get_filing_mock: Mock):
         client = TestClient(app_fixture)
-        res = client.get("/v1/filing/institutions/1234567890/filings/2024/")
+        res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/")
         assert res.status_code == 403
 
     def test_get_filing(self, app_fixture: FastAPI, get_filing_mock: Mock, authed_user_mock: Mock):
         client = TestClient(app_fixture)
-        res = client.get("/v1/filing/institutions/123456ABCDEF/filings/2024/")
-        get_filing_mock.assert_called_with(ANY, "123456ABCDEF", "2024")
+        res = client.get("/v1/filing/institutions/1234567890ABCDEFGH00/filings/2024/")
+        get_filing_mock.assert_called_with(ANY, "1234567890ABCDEFGH00", "2024")
         assert res.status_code == 200
-        assert res.json()["lei"] == "123456ABCDEF"
+        assert res.json()["lei"] == "1234567890ABCDEFGH00"
         assert res.json()["filing_period"] == "2024"
 
         get_filing_mock.return_value = None
-        res = client.get("/v1/filing/institutions/123456ABCDEF/filings/2024/")
+        res = client.get("/v1/filing/institutions/1234567890ABCDEFGH00/filings/2024/")
         assert res.status_code == 204
 
     def test_unauthed_post_filing(self, app_fixture: FastAPI):
@@ -82,7 +83,7 @@ class TestFilingApi:
 
         # testing with a period that does not exist
         get_filing_period_by_code_mock.return_value = None
-        res = client.post("/v1/filing/institutions/1234567890/filings/2025/")
+        res = client.post("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2025/")
         assert res.status_code == 422
 
         assert (
@@ -100,22 +101,22 @@ class TestFilingApi:
         )
         mock_add_creator = mocker.patch("sbl_filing_api.entities.repos.submission_repo.add_user_action")
         mock_add_creator.side_effect = Exception("Error while trying to process CREATE User Action")
-        res = client.post("/v1/filing/institutions/1234567890/filings/2025/")
+        res = client.post("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2025/")
         assert res.status_code == 500
         assert res.content == b'"Error while trying to process CREATE User Action"'
 
         mock_add_creator.return_value = user_action_create
         mock_add_creator.side_effect = None
         post_filing_mock.side_effect = IntegrityError(None, None, None)
-        res = client.post("/v1/filing/institutions/1234567890/filings/2024/")
+        res = client.post("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/")
         assert res.status_code == 409
-        assert res.json()["detail"] == "Filing already exists for Filing Period 2024 and LEI 1234567890"
+        assert res.json()["detail"] == "Filing already exists for Filing Period 2024 and LEI 1234567890ZXWVUTSR00"
 
         post_filing_mock.side_effect = None
-        res = client.post("/v1/filing/institutions/ZXWVUTSRQP/filings/2024/")
-        post_filing_mock.assert_called_with(ANY, "ZXWVUTSRQP", "2024", creator_id=1)
+        res = client.post("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/")
+        post_filing_mock.assert_called_with(ANY, "1234567890ZXWVUTSR00", "2024", creator_id=1)
         assert res.status_code == 200
-        assert res.json()["lei"] == "ZXWVUTSRQP"
+        assert res.json()["lei"] == "1234567890ZXWVUTSR00"
         assert res.json()["filing_period"] == "2024"
 
     def test_unauthed_get_submissions(
@@ -148,9 +149,9 @@ class TestFilingApi:
         ]
 
         client = TestClient(app_fixture)
-        res = client.get("/v1/filing/institutions/1234567890/filings/2024/submissions")
+        res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions")
         results = res.json()
-        mock.assert_called_with(ANY, "1234567890", "2024")
+        mock.assert_called_with(ANY, "1234567890ZXWVUTSR00", "2024")
         assert res.status_code == 200
         assert len(results) == 1
         assert results[0]["state"] == SubmissionState.SUBMISSION_UPLOADED
@@ -158,9 +159,9 @@ class TestFilingApi:
         # verify an empty submission list returns ok
         mock.return_value = []
         client = TestClient(app_fixture)
-        res = client.get("/v1/filing/institutions/1234567890/filings/2024/submissions")
+        res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions")
         results = res.json()
-        mock.assert_called_with(ANY, "1234567890", "2024")
+        mock.assert_called_with(ANY, "1234567890ZXWVUTSR00", "2024")
         assert res.status_code == 200
         assert len(results) == 0
 
@@ -192,17 +193,17 @@ class TestFilingApi:
         )
 
         client = TestClient(app_fixture)
-        res = client.get("/v1/filing/institutions/1234567890/filings/2024/submissions/latest")
+        res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions/latest")
         result = res.json()
-        mock.assert_called_with(ANY, "1234567890", "2024")
+        mock.assert_called_with(ANY, "1234567890ZXWVUTSR00", "2024")
         assert res.status_code == 200
         assert result["state"] == SubmissionState.VALIDATION_IN_PROGRESS
 
         # verify an empty submission result is ok
         mock.return_value = []
         client = TestClient(app_fixture)
-        res = client.get("/v1/filing/institutions/1234567890/filings/2024/submissions/latest")
-        mock.assert_called_with(ANY, "1234567890", "2024")
+        res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions/latest")
+        mock.assert_called_with(ANY, "1234567890ZXWVUTSR00", "2024")
         assert res.status_code == 204
 
     def test_unauthed_get_submission_by_id(self, mocker: MockerFixture, app_fixture: FastAPI):
@@ -232,12 +233,12 @@ class TestFilingApi:
         )
 
         client = TestClient(app_fixture)
-        res = client.get("/v1/filing/institutions/1234567890/filings/2024/submissions/1")
+        res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions/1")
         mock.assert_called_with(ANY, 1)
         assert res.status_code == 200
 
         mock.return_value = None
-        res = client.get("/v1/filing/institutions/1234567890/filings/2024/submissions/1")
+        res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions/1")
         mock.assert_called_with(ANY, 1)
         assert res.status_code == 204
 
@@ -286,9 +287,11 @@ class TestFilingApi:
         files = {"file": ("submission.csv", open(submission_csv, "rb"))}
         client = TestClient(app_fixture)
 
-        res = client.post("/v1/filing/institutions/1234567890/filings/2024/submissions", files=files)
+        res = client.post("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions", files=files)
         mock_add_submission.assert_called_with(ANY, 1, "submission.csv", user_action_submit.id)
-        mock_validate_submission.assert_called_with("2024", "1234567890", return_sub, open(submission_csv, "rb").read())
+        mock_validate_submission.assert_called_with(
+            "2024", "1234567890ZXWVUTSR00", return_sub, open(submission_csv, "rb").read()
+        )
         assert mock_update_submission.call_args.args[0].state == SubmissionState.SUBMISSION_UPLOADED
         assert res.status_code == 200
         assert res.json()["id"] == 1
@@ -307,7 +310,7 @@ class TestFilingApi:
     def test_unauthed_upload_file(self, mocker: MockerFixture, app_fixture: FastAPI, submission_csv: str):
         files = {"file": ("submission.csv", open(submission_csv, "rb"))}
         client = TestClient(app_fixture)
-        res = client.post("/v1/filing/institutions/1234567890/filings/2024/submissions", files=files)
+        res = client.post("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions", files=files)
         assert res.status_code == 403
 
     def test_upload_file_invalid_type(
@@ -317,7 +320,7 @@ class TestFilingApi:
         mock.side_effect = HTTPException(HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
         client = TestClient(app_fixture)
         files = {"file": ("submission.csv", open(submission_csv, "rb"))}
-        res = client.post("/v1/filing/institutions/1234567890/filings/2024/submissions", files=files)
+        res = client.post("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions", files=files)
         assert res.status_code == HTTPStatus.UNSUPPORTED_MEDIA_TYPE
 
     def test_upload_file_invalid_size(
@@ -327,7 +330,7 @@ class TestFilingApi:
         mock.side_effect = HTTPException(HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
         client = TestClient(app_fixture)
         files = {"file": ("submission.csv", open(submission_csv, "rb"))}
-        res = client.post("/v1/filing/institutions/1234567890/filings/2024/submissions", files=files)
+        res = client.post("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions", files=files)
         assert res.status_code == HTTPStatus.REQUEST_ENTITY_TOO_LARGE
 
     def test_submission_update_fail(
@@ -368,7 +371,7 @@ class TestFilingApi:
         file = {"file": ("submission.csv", open(submission_csv, "rb"))}
         client = TestClient(app_fixture)
 
-        res = client.post("/v1/filing/institutions/1234567890/filings/2024/submissions", files=file)
+        res = client.post("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions", files=file)
         mock_logger.mock_calls[0].error.assert_called_with(
             "Error while trying to process Submission 1", RuntimeError, exec_info=True, stack_info=True
         )
@@ -388,7 +391,7 @@ class TestFilingApi:
         mock_upload.side_effect = HTTPException(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="Failed to upload file"
         )
-        res = client.post("/v1/filing/institutions/1234567890/filings/2024/submissions", files=file)
+        res = client.post("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions", files=file)
         mock_logger.mock_calls[0].error.assert_called_with(
             "Error while trying to process Submission 1", RuntimeError, exec_info=True, stack_info=True
         )
@@ -400,7 +403,7 @@ class TestFilingApi:
         client = TestClient(app_fixture)
 
         res = client.put(
-            "/v1/filing/institutions/1234567890/filings/2025/institution-snapshot-id",
+            "/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2025/institution-snapshot-id",
             json={"institution_snapshot_id": "v3"},
         )
         assert res.status_code == 403
@@ -420,32 +423,33 @@ class TestFilingApi:
         # no existing filing for endpoint
         get_filing_mock.return_value = None
         res = client.put(
-            "/v1/filing/institutions/1234567890/filings/2025/institution-snapshot-id",
+            "/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2025/institution-snapshot-id",
             json={"institution_snapshot_id": "v3"},
         )
         assert res.status_code == 422
         assert (
             res.content
-            == b'"A Filing for the LEI (1234567890) and period (2025) that was attempted to be updated does not exist."'
+            == b'"A Filing for the LEI (1234567890ZXWVUTSR00) and period (2025) that was attempted to be updated does not exist."'
         )
 
         # no known field for endpoint
         get_filing_mock.return_value = filing_return
         res = client.put(
-            "/v1/filing/institutions/1234567890/filings/2024/unknown_field", json={"institution_snapshot_id": "v3"}
+            "/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/unknown_field",
+            json={"institution_snapshot_id": "v3"},
         )
         assert res.status_code == 404
 
         # unallowed value data type
         res = client.put(
-            "/v1/filing/institutions/1234567890/filings/2025/institution-snapshot-id",
+            "/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2025/institution-snapshot-id",
             json={"institution_snapshot_id": ["1", "2"]},
         )
         assert res.status_code == 422
 
         # good
         res = client.put(
-            "/v1/filing/institutions/1234567890/filings/2025/institution-snapshot-id",
+            "/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2025/institution-snapshot-id",
             json={"institution_snapshot_id": "v3"},
         )
         assert res.status_code == 200
@@ -454,7 +458,7 @@ class TestFilingApi:
         # no existing filing for contact_info
         get_filing_mock.return_value = None
         res = client.put(
-            "/v1/filing/institutions/1234567890/filings/2024/contact-info",
+            "/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/contact-info",
             json={
                 "id": 1,
                 "filing": 1,
@@ -465,20 +469,20 @@ class TestFilingApi:
                 "hq_address_city": "Test City 1",
                 "hq_address_state": "TS",
                 "hq_address_zip": "12345",
-                "phone": "112-345-6789",
+                "phone_number": "112-345-6789",
                 "email": "name_1@email.test",
             },
         )
         assert res.status_code == 422
         assert (
             res.content
-            == b'"A Filing for the LEI (1234567890) and period (2024) that was attempted to be updated does not exist."'
+            == b'"A Filing for the LEI (1234567890ZXWVUTSR00) and period (2024) that was attempted to be updated does not exist."'
         )
 
     async def test_unauthed_task_update(self, app_fixture: FastAPI, unauthed_user_mock: Mock):
         client = TestClient(app_fixture)
         res = client.post(
-            "/v1/filing/institutions/1234567890/filings/2024/tasks/Task-1",
+            "/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/tasks/Task-1",
             json={"state": "COMPLETED"},
         )
         assert res.status_code == 403
@@ -487,12 +491,12 @@ class TestFilingApi:
         mock = mocker.patch("sbl_filing_api.entities.repos.submission_repo.update_task_state")
         client = TestClient(app_fixture)
         res = client.post(
-            "/v1/filing/institutions/1234567890/filings/2024/tasks/Task-1",
+            "/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/tasks/Task-1",
             json={"state": "COMPLETED"},
         )
         assert res.status_code == 200
         mock.assert_called_with(
-            ANY, "1234567890", "2024", "Task-1", FilingTaskState.COMPLETED, authed_user_mock.return_value[1]
+            ANY, "1234567890ZXWVUTSR00", "2024", "Task-1", FilingTaskState.COMPLETED, authed_user_mock.return_value[1]
         )
 
     def test_unauthed_user_lei_association(
@@ -505,7 +509,7 @@ class TestFilingApi:
     ):
         client = TestClient(app_fixture)
 
-        res = client.get("/v1/filing/institutions/123456ABCDEF/filings/2024/")
+        res = client.get("/v1/filing/institutions/1234567890ABCDEFGH00/filings/2024/")
         assert res.status_code == 403
 
     def test_user_lei_association(
@@ -521,11 +525,11 @@ class TestFilingApi:
         res = client.get("/v1/filing/periods")
         assert res.status_code == 200
 
-        res = client.get("/v1/filing/institutions/1234567890/filings/2024/")
+        res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/")
         assert res.status_code == 403
-        assert res.json()["detail"] == "LEI 1234567890 is not associated with the user."
+        assert res.json()["detail"] == "LEI 1234567890ZXWVUTSR00 is not associated with the user."
 
-        res = client.get("/v1/filing/institutions/123456ABCDEF/filings/2024/")
+        res = client.get("/v1/filing/institutions/1234567890ABCDEFGH00/filings/2024/")
         assert res.status_code == 200
 
     def test_verify_lei_dependency(self, mocker: MockerFixture):
@@ -533,14 +537,14 @@ class TestFilingApi:
         mock_user_fi_service.return_value = httpx.Response(200, json={"is_active": False})
         with pytest.raises(HTTPException) as http_exc:
             request = Request(scope={"type": "http", "headers": [(b"authorization", b"123")]})
-            verify_lei(request=request, lei="1234567890")
+            verify_lei(request=request, lei="1234567890ZXWVUTSR00")
         assert isinstance(http_exc.value, HTTPException)
         assert http_exc.value.status_code == 403
-        assert http_exc.value.detail == "LEI 1234567890 is in an inactive state."
+        assert http_exc.value.detail == "LEI 1234567890ZXWVUTSR00 is in an inactive state."
 
     async def test_unauthed_get_contact_info(self, app_fixture: FastAPI, unauthed_user_mock: Mock):
         client = TestClient(app_fixture)
-        res = client.get("/v1/filing/institutions/1234567890/filings/2024/contact-info")
+        res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/contact-info")
         assert res.status_code == 403
 
     async def test_get_contact_info(self, mocker: MockerFixture, app_fixture: FastAPI, authed_user_mock: Mock):
@@ -555,12 +559,12 @@ class TestFilingApi:
             hq_address_city="Test City",
             hq_address_state="TS",
             hq_address_zip="12345",
-            phone="112-345-6789",
+            phone_number="112-345-6789",
             email="name_1@email.test",
         )
 
         client = TestClient(app_fixture)
-        res = client.get("/v1/filing/institutions/1234567890/filings/2024/contact-info")
+        res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/contact-info")
         result = res.json()
 
         assert res.status_code == 200
@@ -572,12 +576,12 @@ class TestFilingApi:
         assert result["hq_address_city"] == "Test City"
         assert result["hq_address_state"] == "TS"
         assert result["hq_address_zip"] == "12345"
-        assert result["phone"] == "112-345-6789"
+        assert result["phone_number"] == "112-345-6789"
         assert result["email"] == "name_1@email.test"
 
         # no contact_info for endpoint
         mock.return_value = None
-        res = client.get("/v1/filing/institutions/1234567890/filings/2024/contact-info")
+        res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/contact-info")
         assert res.status_code == 204
 
     async def test_unauthed_put_contact_info(self, mocker: MockerFixture, app_fixture: FastAPI, unauthed_user_mock):
@@ -591,11 +595,13 @@ class TestFilingApi:
             "hq_address_city": "Test City 1",
             "hq_address_state": "TS",
             "hq_address_zip": "12345",
-            "phone": "112-345-6789",
+            "phone_number": "112-345-6789",
             "email": "name_1@email.test",
         }
         client = TestClient(app_fixture)
-        res = client.put("/v1/filing/institutions/1234567890/filings/2024/contact-info", json=contact_info_json)
+        res = client.put(
+            "/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/contact-info", json=contact_info_json
+        )
         assert res.status_code == 403
 
     def test_put_contact_info(
@@ -606,7 +612,7 @@ class TestFilingApi:
         mock = mocker.patch("sbl_filing_api.entities.repos.submission_repo.update_contact_info")
         mock.return_value = FilingDAO(
             id=1,
-            lei="1234567890",
+            lei="1234567890ZXWVUTSR00",
             institution_snapshot_id="Snapshot-1",
             filing_period="2024",
             contact_info=ContactInfoDAO(
@@ -619,7 +625,7 @@ class TestFilingApi:
                 hq_address_city="Test City 1",
                 hq_address_state="TS",
                 hq_address_zip="12345",
-                phone="112-345-6789",
+                phone_number="112-345-6789",
                 email="name_1@email.test",
             ),
             creator_id=1,
@@ -644,17 +650,19 @@ class TestFilingApi:
             "hq_address_city": "Test City 1",
             "hq_address_state": "TS",
             "hq_address_zip": "12345",
-            "phone": "112-345-6789",
+            "phone_number": "112-345-6789",
             "email": "name_1@email.test",
         }
 
-        res = client.put("/v1/filing/institutions/1234567890/filings/2024/contact-info", json=contact_info_json)
+        res = client.put(
+            "/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/contact-info", json=contact_info_json
+        )
 
         assert res.status_code == 200
 
         result = res.json()
         assert result["id"] == 1
-        assert result["lei"] == "1234567890"
+        assert result["lei"] == "1234567890ZXWVUTSR00"
         assert result["institution_snapshot_id"] == "Snapshot-1"
         assert result["filing_period"] == "2024"
         assert result["contact_info"]["id"] == 1
@@ -665,12 +673,12 @@ class TestFilingApi:
         assert result["contact_info"]["hq_address_city"] == "Test City 1"
         assert result["contact_info"]["hq_address_state"] == "TS"
         assert result["contact_info"]["hq_address_zip"] == "12345"
-        assert result["contact_info"]["phone"] == "112-345-6789"
+        assert result["contact_info"]["phone_number"] == "112-345-6789"
         assert result["contact_info"]["email"] == "name_1@email.test"
 
         mock.assert_called_with(
             ANY,
-            "1234567890",
+            "1234567890ZXWVUTSR00",
             "2024",
             ContactInfoDTO(
                 id=1,
@@ -682,7 +690,7 @@ class TestFilingApi:
                 hq_address_state="TS",
                 hq_address_zip="12345",
                 email="name_1@email.test",
-                phone="112-345-6789",
+                phone_number="112-345-6789",
             ),
         )
 
@@ -734,15 +742,15 @@ class TestFilingApi:
         )
 
         client = TestClient(app_fixture)
-        res = client.put("/v1/filing/institutions/1234567890/filings/2024/submissions/1/accept")
+        res = client.put("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions/1/accept")
         assert res.status_code == 403
         assert (
             res.json()
-            == "Submission 1 for LEI 1234567890 in filing period 2024 is not in an acceptable state.  Submissions must be validated successfully or with only warnings to be accepted."
+            == "Submission 1 for LEI 1234567890ZXWVUTSR00 in filing period 2024 is not in an acceptable state.  Submissions must be validated successfully or with only warnings to be accepted."
         )
 
         mock.return_value.state = SubmissionState.VALIDATION_SUCCESSFUL
-        res = client.put("/v1/filing/institutions/1234567890/filings/2024/submissions/1/accept")
+        res = client.put("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions/1/accept")
         update_mock.assert_called_once()
         update_accepter_mock.assert_called_once_with(
             ANY,
@@ -762,7 +770,7 @@ class TestFilingApi:
         assert res.status_code == 200
 
         mock.return_value = None
-        res = client.put("/v1/filing/institutions/1234567890/filings/2024/submissions/1/accept")
+        res = client.put("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions/1/accept")
         assert res.status_code == 422
         assert res.json() == "Submission ID 1 does not exist, cannot accept a non-existing submission."
 
@@ -802,7 +810,7 @@ class TestFilingApi:
         upsert_mock.return_value = updated_filing_obj
 
         client = TestClient(app_fixture)
-        res = client.put("/v1/filing/institutions/123456ABCDEF/filings/2024/sign")
+        res = client.put("/v1/filing/institutions/1234567890ABCDEFGH00/filings/2024/sign")
         add_sig_mock.assert_called_with(
             ANY,
             user_id="123456-7890-ABCDEF-GHIJ",
@@ -810,7 +818,7 @@ class TestFilingApi:
             user_email="test@local.host",
             action_type=UserActionType.SIGN,
         )
-        assert upsert_mock.call_args.args[1].confirmation_id.startswith("123456ABCDEF-2024-1-")
+        assert upsert_mock.call_args.args[1].confirmation_id.startswith("1234567890ABCDEFGH00-2024-1-")
         assert res.status_code == 200
         assert float(upsert_mock.call_args.args[1].confirmation_id.split("-")[3]) == pytest.approx(
             dt.now().timestamp(), abs=1.5
@@ -838,19 +846,19 @@ class TestFilingApi:
         )
 
         client = TestClient(app_fixture)
-        res = client.put("/v1/filing/institutions/123456ABCDEF/filings/2024/sign")
+        res = client.put("/v1/filing/institutions/1234567890ABCDEFGH00/filings/2024/sign")
         assert res.status_code == 403
         assert (
             res.json()
-            == "Cannot sign filing. Filing for 123456ABCDEF for period 2024 does not have a latest submission the SUBMISSION_ACCEPTED state."
+            == "Cannot sign filing. Filing for 1234567890ABCDEFGH00 for period 2024 does not have a latest submission the SUBMISSION_ACCEPTED state."
         )
 
         sub_mock.return_value = None
-        res = client.put("/v1/filing/institutions/123456ABCDEF/filings/2024/sign")
+        res = client.put("/v1/filing/institutions/1234567890ABCDEFGH00/filings/2024/sign")
         assert res.status_code == 403
         assert (
             res.json()
-            == "Cannot sign filing. Filing for 123456ABCDEF for period 2024 does not have a latest submission the SUBMISSION_ACCEPTED state."
+            == "Cannot sign filing. Filing for 1234567890ABCDEFGH00 for period 2024 does not have a latest submission the SUBMISSION_ACCEPTED state."
         )
 
         sub_mock.return_value = SubmissionDAO(
@@ -872,28 +880,28 @@ class TestFilingApi:
 
         """
         get_filing_mock.return_value.institution_snapshot_id = None
-        res = client.put("/v1/filing/institutions/123456ABCDEF/filings/2024/sign")
+        res = client.put("/v1/filing/institutions/1234567890ABCDEFGH00/filings/2024/sign")
         assert res.status_code == 403
         assert (
             res.json()
-            == "Cannot sign filing. Filing for 123456ABCDEF for period 2024 does not have institution snapshot id defined."
+            == "Cannot sign filing. Filing for 1234567890ABCDEFGH00 for period 2024 does not have institution snapshot id defined."
         )
         """
 
         get_filing_mock.return_value.contact_info = None
-        res = client.put("/v1/filing/institutions/123456ABCDEF/filings/2024/sign")
+        res = client.put("/v1/filing/institutions/1234567890ABCDEFGH00/filings/2024/sign")
         assert res.status_code == 403
         assert (
             res.json()
-            == "Cannot sign filing. Filing for 123456ABCDEF for period 2024 does not have contact info defined."
+            == "Cannot sign filing. Filing for 1234567890ABCDEFGH00 for period 2024 does not have contact info defined."
         )
 
         get_filing_mock.return_value = None
-        res = client.put("/v1/filing/institutions/123456ABCDEF/filings/2024/sign")
+        res = client.put("/v1/filing/institutions/1234567890ABCDEFGH00/filings/2024/sign")
         assert res.status_code == 422
         assert (
             res.json()
-            == "There is no Filing for LEI 123456ABCDEF in period 2024, unable to sign a non-existent Filing."
+            == "There is no Filing for LEI 1234567890ABCDEFGH00 in period 2024, unable to sign a non-existent Filing."
         )
 
     async def test_get_latest_sub_report(self, mocker: MockerFixture, app_fixture: FastAPI, authed_user_mock: Mock):
@@ -923,9 +931,9 @@ class TestFilingApi:
         file_mock.return_value = temp_file.name
 
         client = TestClient(app_fixture)
-        res = client.get("/v1/filing/institutions/1234567890/filings/2024/submissions/latest/report")
-        sub_mock.assert_called_with(ANY, "1234567890", "2024")
-        file_mock.assert_called_with("2024", "1234567890", "1" + submission_processor.REPORT_QUALIFIER)
+        res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions/latest/report")
+        sub_mock.assert_called_with(ANY, "1234567890ZXWVUTSR00", "2024")
+        file_mock.assert_called_with("2024", "1234567890ZXWVUTSR00", "1" + submission_processor.REPORT_QUALIFIER)
         assert res.status_code == 200
         assert res.text == "Test"
         assert res.headers["content-type"] == "text/csv; charset=utf-8"
@@ -933,8 +941,8 @@ class TestFilingApi:
 
         sub_mock.return_value = []
         client = TestClient(app_fixture)
-        res = client.get("/v1/filing/institutions/1234567890/filings/2024/submissions/latest/report")
-        sub_mock.assert_called_with(ANY, "1234567890", "2024")
+        res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions/latest/report")
+        sub_mock.assert_called_with(ANY, "1234567890ZXWVUTSR00", "2024")
         assert res.status_code == 204
 
         os.unlink(temp_file.name)
@@ -966,9 +974,9 @@ class TestFilingApi:
         file_mock.return_value = temp_file.name
 
         client = TestClient(app_fixture)
-        res = client.get("/v1/filing/institutions/1234567890/filings/2024/submissions/2/report")
+        res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions/2/report")
         sub_mock.assert_called_with(ANY, 2)
-        file_mock.assert_called_with("2024", "1234567890", "2" + submission_processor.REPORT_QUALIFIER)
+        file_mock.assert_called_with("2024", "1234567890ZXWVUTSR00", "2" + submission_processor.REPORT_QUALIFIER)
         assert res.status_code == 200
         assert res.text == "Test"
         assert res.headers["content-type"] == "text/csv; charset=utf-8"
@@ -976,8 +984,59 @@ class TestFilingApi:
 
         sub_mock.return_value = []
         client = TestClient(app_fixture)
-        res = client.get("/v1/filing/institutions/1234567890/filings/2024/submissions/1/report")
+        res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions/1/report")
         sub_mock.assert_called_with(ANY, 1)
         assert res.status_code == 204
 
         os.unlink(temp_file.name)
+
+    def test_contact_info_invalid_email(self, mocker: MockerFixture, app_fixture: FastAPI, authed_user_mock: Mock):
+        client = TestClient(app_fixture)
+        contact_info_json = {
+            "id": 1,
+            "filing": 1,
+            "first_name": "test_first_name_1",
+            "last_name": "test_last_name_1",
+            "hq_address_street_1": "address street 1",
+            "hq_address_street_2": "",
+            "hq_address_city": "Test City 1",
+            "hq_address_state": "TS",
+            "hq_address_zip": "12345",
+            "phone_number": "112-345-6789",
+            "email": "test_email",
+        }
+
+        res = client.put(
+            "/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/contact-info", json=contact_info_json
+        )
+        assert (
+            res.json()["detail"][0]["msg"] == f"Value error, Invalid email test_email. {regex_configs.email.error_text}"
+        )
+        assert res.status_code == 422
+
+    def test_contact_info_invalid_phone_number(
+        self, mocker: MockerFixture, app_fixture: FastAPI, authed_user_mock: Mock
+    ):
+        client = TestClient(app_fixture)
+        contact_info_json = {
+            "id": 1,
+            "filing": 1,
+            "first_name": "test_first_name_1",
+            "last_name": "test_last_name_1",
+            "hq_address_street_1": "address street 1",
+            "hq_address_street_2": "",
+            "hq_address_city": "Test City 1",
+            "hq_address_state": "TS",
+            "hq_address_zip": "12345",
+            "phone_number": "1123456789",
+            "email": "test@cfpb.gov",
+        }
+
+        res = client.put(
+            "/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/contact-info", json=contact_info_json
+        )
+        assert (
+            res.json()["detail"][0]["msg"]
+            == f"Value error, Invalid phone number 1123456789. {regex_configs.phone_number.error_text}"
+        )
+        assert res.status_code == 422
