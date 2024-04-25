@@ -2035,7 +2035,7 @@ tabulate = "^0.9.0"
 type = "git"
 url = "https://github.com/cfpb/regtech-data-validator.git"
 reference = "HEAD"
-resolved_reference = "bf7a4a00ad4137f141415f78ec1718dff324a066"
+resolved_reference = "3240877c877502dc56c33244dda57d6577e7a847"
 
 [[package]]
 name = "requests"
