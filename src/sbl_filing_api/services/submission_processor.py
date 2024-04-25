@@ -69,7 +69,7 @@ async def upload_to_storage(period_code: str, lei: str, file_identifier: str, co
         raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="Failed to upload file")
 
 
-async def get_from_storage(period_code: str, lei: str, file_identifier: str, extension: str = "csv"):
+def get_from_storage(period_code: str, lei: str, file_identifier: str, extension: str = "csv"):
     try:
         fs: AbstractFileSystem = filesystem(**settings.fs_download_config.__dict__)
         file_path = f"{settings.fs_upload_config.root}/upload/{period_code}/{lei}/{file_identifier}.{extension}"
@@ -105,9 +105,9 @@ async def validate_and_update_submission(
             submission.state = SubmissionState.VALIDATION_SUCCESSFUL
         submission.validation_json = build_validation_results(result)
         submission_report = df_to_download(result[1])
-        #await upload_to_storage(
-        #    period_code, lei, str(submission.id) + REPORT_QUALIFIER, submission_report.encode("utf-8")
-        #)
+        upload_to_storage(
+            period_code, lei, str(submission.id) + REPORT_QUALIFIER, submission_report.encode("utf-8")
+        )
         if not exec_check["continue"]:
             log.warning(f"Submission {submission.id} is expired, will not be updating final state with results.")
             return

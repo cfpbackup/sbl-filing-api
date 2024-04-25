@@ -138,7 +138,7 @@ async def upload_file(
         )
         submission = await repo.add_submission(request.state.db_session, filing.id, file.filename, submitter.id)
         try:
-            await submission_processor.upload_to_storage(
+            submission_processor.upload_to_storage(
                 period_code, lei, submission.id, content, file.filename.split(".")[-1]
             )
 
