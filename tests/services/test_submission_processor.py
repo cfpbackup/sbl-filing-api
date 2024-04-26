@@ -112,7 +112,7 @@ class TestSubmissionProcessor:
         self,
         mocker: MockerFixture,
         successful_submission_mock: Mock,
-        validation_success_mock: Mock,
+        validate_phases_success_mock: Mock,
         df_to_download_mock: Mock,
     ):
         mock_sub = SubmissionDAO(
@@ -132,7 +132,7 @@ class TestSubmissionProcessor:
             "1" + submission_processor.REPORT_QUALIFIER,
             encoded_results,
         )
-        json_results = json.loads(successful_submission_mock.mock_calls[1].args[0].validation_json)
+        json_results = successful_submission_mock.mock_calls[1].args[0].validation_json
         assert successful_submission_mock.mock_calls[0].args[0].state == SubmissionState.VALIDATION_IN_PROGRESS
         assert successful_submission_mock.mock_calls[0].args[0].validation_ruleset_version == "0.1.0"
         assert successful_submission_mock.mock_calls[1].args[0].state == "VALIDATION_SUCCESSFUL"
@@ -144,7 +144,7 @@ class TestSubmissionProcessor:
         self,
         mocker: MockerFixture,
         warning_submission_mock: Mock,
-        validation_logic_warnings_mock: Mock,
+        validate_phases_logic_warnings_mock: Mock,
         df_to_download_mock: Mock,
     ):
         mock_sub = SubmissionDAO(
@@ -163,7 +163,7 @@ class TestSubmissionProcessor:
             "1" + submission_processor.REPORT_QUALIFIER,
             encoded_results,
         )
-        json_results = json.loads(warning_submission_mock.mock_calls[1].args[0].validation_json)
+        json_results = warning_submission_mock.mock_calls[1].args[0].validation_json
         assert warning_submission_mock.mock_calls[0].args[0].state == SubmissionState.VALIDATION_IN_PROGRESS
         assert warning_submission_mock.mock_calls[0].args[0].validation_ruleset_version == "0.1.0"
         assert warning_submission_mock.mock_calls[1].args[0].state == "VALIDATION_WITH_WARNINGS"
@@ -175,7 +175,7 @@ class TestSubmissionProcessor:
         self,
         mocker: MockerFixture,
         error_submission_mock: Mock,
-        validation_syntax_errors_mock: Mock,
+        validate_phases_syntax_errors_mock: Mock,
         df_to_download_mock: Mock,
     ):
         mock_sub = SubmissionDAO(
@@ -195,7 +195,7 @@ class TestSubmissionProcessor:
             "1" + submission_processor.REPORT_QUALIFIER,
             encoded_results,
         )
-        json_results = json.loads(error_submission_mock.mock_calls[1].args[0].validation_json)
+        json_results = error_submission_mock.mock_calls[1].args[0].validation_json
         assert error_submission_mock.mock_calls[0].args[0].state == SubmissionState.VALIDATION_IN_PROGRESS
         assert error_submission_mock.mock_calls[0].args[0].validation_ruleset_version == "0.1.0"
         assert error_submission_mock.mock_calls[1].args[0].state == "VALIDATION_WITH_ERRORS"
@@ -205,7 +205,7 @@ class TestSubmissionProcessor:
         self,
         mocker: MockerFixture,
         error_submission_mock: Mock,
-        validation_logic_errors_mock: Mock,
+        validate_phases_logic_errors_mock: Mock,
         df_to_download_mock: Mock,
     ):
         mock_sub = SubmissionDAO(
@@ -225,7 +225,7 @@ class TestSubmissionProcessor:
             "1" + submission_processor.REPORT_QUALIFIER,
             encoded_results,
         )
-        json_results = json.loads(error_submission_mock.mock_calls[1].args[0].validation_json)
+        json_results = error_submission_mock.mock_calls[1].args[0].validation_json
         assert error_submission_mock.mock_calls[0].args[0].state == SubmissionState.VALIDATION_IN_PROGRESS
         assert error_submission_mock.mock_calls[0].args[0].validation_ruleset_version == "0.1.0"
         assert error_submission_mock.mock_calls[1].args[0].state == "VALIDATION_WITH_ERRORS"
@@ -237,7 +237,7 @@ class TestSubmissionProcessor:
         self,
         mocker: MockerFixture,
         error_submission_mock: Mock,
-        validation_logic_warnings_and_errors_mock: Mock,
+        validate_phases_logic_warnings_and_errors_mock: Mock,
         df_to_download_mock: Mock,
     ):
         mock_sub = SubmissionDAO(
@@ -257,7 +257,7 @@ class TestSubmissionProcessor:
             "1" + submission_processor.REPORT_QUALIFIER,
             encoded_results,
         )
-        json_results = json.loads(error_submission_mock.mock_calls[1].args[0].validation_json)
+        json_results = error_submission_mock.mock_calls[1].args[0].validation_json
         assert error_submission_mock.mock_calls[0].args[0].state == SubmissionState.VALIDATION_IN_PROGRESS
         assert error_submission_mock.mock_calls[0].args[0].validation_ruleset_version == "0.1.0"
         assert error_submission_mock.mock_calls[1].args[0].state == "VALIDATION_WITH_ERRORS"

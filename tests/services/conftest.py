@@ -4,6 +4,8 @@ import pytest
 from pytest_mock import MockerFixture
 from textwrap import dedent
 from unittest.mock import Mock
+from regtech_data_validator.create_schemas import ValidationPhase
+from regtech_data_validator.checks import Severity
 
 from sbl_filing_api.entities.models.dao import SubmissionDAO, SubmissionState
 
@@ -47,99 +49,182 @@ def warning_submission_mock(mocker: MockerFixture, validate_submission_mock: Moc
 
 
 @pytest.fixture(scope="function")
-def validation_success_mock(mocker: MockerFixture, validate_submission_mock: Mock):
-    mock_json_formatting = mocker.patch("sbl_filing_api.services.submission_processor.build_validation_results")
-    mock_json_formatting.return_value = """
-        {
-        "syntax_errors": {
-            "count": 0,
-            "details": []
-        },
-        "logic_errors": {
-            "count": 0,
-            "details": []
-        },
-        "logic_warnings": {
-            "count": 0,
-            "details": []
-        }
-    }"""
+def validate_phases_success_mock(mocker: MockerFixture, validate_submission_mock: Mock):
+    mock_json_formatting = mocker.patch("sbl_filing_api.services.submission_processor.validate_phases")
+    mock_json_formatting.return_value = (True, pd.DataFrame(), ValidationPhase.LOGICAL.value)
     return mock_json_formatting
 
 
 @pytest.fixture(scope="function")
-def validation_syntax_errors_mock(mocker: MockerFixture, validate_submission_mock: Mock):
-    mock_json_formatting = mocker.patch("sbl_filing_api.services.submission_processor.build_validation_results")
-    mock_json_formatting.return_value = """
-        {
-        "syntax_errors": {
-            "count": 2,
-            "details": []
-        }
-    }"""
+def validate_phases_syntax_errors_mock(mocker: MockerFixture, validate_submission_mock: Mock):
+    mock_json_formatting = mocker.patch("sbl_filing_api.services.submission_processor.validate_phases")
+    mock_json_formatting.return_value = (
+        False,
+        pd.DataFrame(
+            [
+                [
+                    1,
+                    ValidationPhase.SYNTACTICAL.value,
+                    "TESTLEI1234567890123",
+                    "field_in_error",
+                    1,
+                    Severity.ERROR.value,
+                    "test_link",
+                    "VALID123",
+                    "validation_name_goes_here",
+                    "this is a val desc",
+                    "single-field",
+                ]
+            ],
+            columns=[
+                "record_no",
+                "validation_phase",
+                "uid",
+                "field_name",
+                "field_value",
+                "validation_severity",
+                "fig_link",
+                "validation_id",
+                "validation_name",
+                "validation_desc",
+                "scope",
+            ],
+        ),
+        ValidationPhase.SYNTACTICAL.value,
+    )
     return mock_json_formatting
 
 
 @pytest.fixture(scope="function")
-def validation_logic_warnings_mock(mocker: MockerFixture, validate_submission_mock: Mock):
-    mock_json_formatting = mocker.patch("sbl_filing_api.services.submission_processor.build_validation_results")
-    mock_json_formatting.return_value = """
-        {
-        "syntax_errors": {
-            "count": 0,
-            "details": []
-        },
-        "logic_errors": {
-            "count": 0,
-            "details": []
-        },
-        "logic_warnings": {
-            "count": 1,
-            "details": []
-        }
-    }"""
+def validate_phases_logic_warnings_mock(mocker: MockerFixture, validate_submission_mock: Mock):
+    mock_json_formatting = mocker.patch("sbl_filing_api.services.submission_processor.validate_phases")
+    mock_json_formatting.return_value = (
+        False,
+        pd.DataFrame(
+            [
+                [
+                    1,
+                    ValidationPhase.LOGICAL.value,
+                    "TESTLEI1234567890123",
+                    "field_in_error",
+                    1,
+                    Severity.WARNING.value,
+                    "test_link",
+                    "VALID123",
+                    "validation_name_goes_here",
+                    "this is a val desc",
+                    "multi-field",
+                ]
+            ],
+            columns=[
+                "record_no",
+                "validation_phase",
+                "uid",
+                "field_name",
+                "field_value",
+                "validation_severity",
+                "fig_link",
+                "validation_id",
+                "validation_name",
+                "validation_desc",
+                "scope",
+            ],
+        ),
+        ValidationPhase.LOGICAL.value,
+    )
     return mock_json_formatting
 
 
 @pytest.fixture(scope="function")
-def validation_logic_errors_mock(mocker: MockerFixture, validate_submission_mock: Mock):
-    mock_json_formatting = mocker.patch("sbl_filing_api.services.submission_processor.build_validation_results")
-    mock_json_formatting.return_value = """
-        {
-        "syntax_errors": {
-            "count": 0,
-            "details": []
-        },
-        "logic_errors": {
-            "count": 4,
-            "details": []
-        },
-        "logic_warnings": {
-            "count": 0,
-            "details": []
-        }
-    }"""
+def validate_phases_logic_errors_mock(mocker: MockerFixture, validate_submission_mock: Mock):
+    mock_json_formatting = mocker.patch("sbl_filing_api.services.submission_processor.validate_phases")
+    mock_json_formatting.return_value = (
+        False,
+        pd.DataFrame(
+            [
+                [
+                    1,
+                    ValidationPhase.LOGICAL.value,
+                    "TESTLEI1234567890123",
+                    "field_in_error",
+                    1,
+                    Severity.ERROR.value,
+                    "test_link",
+                    "VALID123",
+                    "validation_name_goes_here",
+                    "this is a val desc",
+                    "multi-field",
+                ]
+            ],
+            columns=[
+                "record_no",
+                "validation_phase",
+                "uid",
+                "field_name",
+                "field_value",
+                "validation_severity",
+                "fig_link",
+                "validation_id",
+                "validation_name",
+                "validation_desc",
+                "scope",
+            ],
+        ),
+        ValidationPhase.LOGICAL.value,
+    )
     return mock_json_formatting
 
 
 @pytest.fixture(scope="function")
-def validation_logic_warnings_and_errors_mock(mocker: MockerFixture, validate_submission_mock: Mock):
-    mock_json_formatting = mocker.patch("sbl_filing_api.services.submission_processor.build_validation_results")
-    mock_json_formatting.return_value = """
-        {
-        "syntax_errors": {
-            "count": 0,
-            "details": []
-        },
-        "logic_errors": {
-            "count": 3,
-            "details": []
-        },
-        "logic_warnings": {
-            "count": 2,
-            "details": []
-        }
-    }"""
+def validate_phases_logic_warnings_and_errors_mock(mocker: MockerFixture, validate_submission_mock: Mock):
+    mock_json_formatting = mocker.patch("sbl_filing_api.services.submission_processor.validate_phases")
+    mock_json_formatting.return_value = (
+        False,
+        pd.DataFrame(
+            [
+                [
+                    1,
+                    ValidationPhase.LOGICAL.value,
+                    "TESTLEI1234567890123",
+                    "field_in_error",
+                    1,
+                    Severity.WARNING.value,
+                    "test_link",
+                    "VALID123",
+                    "validation_name_goes_here",
+                    "this is a val desc",
+                    "multi-field",
+                ],
+                [
+                    2,
+                    ValidationPhase.LOGICAL.value,
+                    "TESTLEI1234567890123",
+                    "field_in_error",
+                    1,
+                    Severity.ERROR.value,
+                    "test_link",
+                    "VALID234",
+                    "validation_name_goes_here",
+                    "this is a val desc",
+                    "multi-field",
+                ]
+            ],
+            columns=[
+                "record_no",
+                "validation_phase",
+                "uid",
+                "field_name",
+                "field_value",
+                "validation_severity",
+                "fig_link",
+                "validation_id",
+                "validation_name",
+                "validation_desc",
+                "scope",
+            ],
+        ),
+        ValidationPhase.LOGICAL.value,
+    )
     return mock_json_formatting
 
 
