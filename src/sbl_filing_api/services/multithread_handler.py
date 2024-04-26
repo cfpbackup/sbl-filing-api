@@ -27,7 +27,6 @@ def handle_submission(period_code: str, lei: str, submission: SubmissionDAO, con
 
 async def check_future(future, submission_id, exec_check):
     await asyncio.sleep(settings.expired_submission_check_secs)
-    # await asyncio.sleep(10)
     if not future.done():
         future.cancel()
         exec_check["continue"] = False

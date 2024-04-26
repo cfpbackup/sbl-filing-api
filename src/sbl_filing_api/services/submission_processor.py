@@ -16,12 +16,14 @@ from fastapi import HTTPException
 import logging
 from fsspec import AbstractFileSystem, filesystem
 from sbl_filing_api.config import settings
+import boto3
 
 log = logging.getLogger(__name__)
 
 REPORT_QUALIFIER = "_report"
 
-upload_fs: AbstractFileSystem = filesystem(settings.fs_upload_config.protocol)
+s3 = boto3.resource('s3')
+bucket = s3.Bucket(settings.fs_upload_config.root)
 
 async def validation_monitor(period_code: str, lei: str, submission: SubmissionDAO, content: bytes):
     try:
@@ -59,13 +61,17 @@ def validate_file_processable(file: UploadFile) -> None:
 
 def upload_to_storage(period_code: str, lei: str, file_identifier: str, content: bytes, extension: str = "csv"):
     try:
-        fs: AbstractFileSystem = filesystem(settings.fs_upload_config.protocol)
         if settings.fs_upload_config.mkdir:
+            fs: AbstractFileSystem = filesystem(settings.fs_upload_config.protocol)
             fs.mkdirs(f"{settings.fs_upload_config.root}/upload/{period_code}/{lei}", exist_ok=True)
-        with fs.open(
-            f"{settings.fs_upload_config.root}/upload/{period_code}/{lei}/{file_identifier}.{extension}", "wb"
-        ) as f:
-            f.write(content)
+            with fs.open(
+                f"{settings.fs_upload_config.root}/upload/{period_code}/{lei}/{file_identifier}.{extension}", "wb"
+            ) as f:
+                f.write(content)
+        else:
+            log.error("using boto3 to upload")
+            bucket.put_object(Key=f"upload/{period_code}/{lei}/{file_identifier}.{extension}", Body=content)
+            log.error("boto3 upload completed")
     except Exception as e:
         log.error("Failed to upload file", e, exc_info=True, stack_info=True)
         raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="Failed to upload file")
