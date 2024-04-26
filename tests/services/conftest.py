@@ -207,7 +207,7 @@ def validate_phases_logic_warnings_and_errors_mock(mocker: MockerFixture, valida
                     "validation_name_goes_here",
                     "this is a val desc",
                     "multi-field",
-                ]
+                ],
             ],
             columns=[
                 "record_no",
