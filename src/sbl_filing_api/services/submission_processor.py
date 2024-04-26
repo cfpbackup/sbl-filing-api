@@ -8,6 +8,7 @@ from regtech_data_validator.data_formatters import df_to_json, df_to_download
 from regtech_data_validator.checks import Severity
 import pandas as pd
 import importlib.metadata as imeta
+from sbl_filing_api.entities.engine.engine import SessionLocal
 from sbl_filing_api.entities.models.dao import SubmissionDAO, SubmissionState
 from sbl_filing_api.entities.repos.submission_repo import update_submission
 from http import HTTPStatus
@@ -55,7 +56,7 @@ def validate_file_processable(file: UploadFile) -> None:
         )
 
 
-async def upload_to_storage(period_code: str, lei: str, file_identifier: str, content: bytes, extension: str = "csv"):
+def upload_to_storage(period_code: str, lei: str, file_identifier: str, content: bytes, extension: str = "csv"):
     try:
         fs: AbstractFileSystem = filesystem(settings.fs_upload_config.protocol)
         if settings.fs_upload_config.mkdir:
@@ -86,48 +87,56 @@ async def validate_and_update_submission(
     validator_version = imeta.version("regtech-data-validator")
     submission.validation_ruleset_version = validator_version
     submission.state = SubmissionState.VALIDATION_IN_PROGRESS
-    submission = await update_submission(submission)
 
-    try:
-        df = pd.read_csv(BytesIO(content), dtype=str, na_filter=False)
+    print(f"start validation {submission.id}------------------------------------------------------")
 
-        # Validate Phases
-        result = validate_phases(df, {"lei": lei})
+    async with SessionLocal() as session:
+        submission = await update_submission(submission, incoming_session=session)
 
-        # Update tables with response
-        if not result[0]:
-            submission.state = (
-                SubmissionState.VALIDATION_WITH_ERRORS
-                if Severity.ERROR.value in result[1]["validation_severity"].values
-                else SubmissionState.VALIDATION_WITH_WARNINGS
+        try:
+            df = pd.read_csv(BytesIO(content), dtype=str, na_filter=False)
+
+            # Validate Phases
+            result = validate_phases(df, {"lei": lei})
+
+            # Update tables with response
+            if not result[0]:
+                submission.state = (
+                    SubmissionState.VALIDATION_WITH_ERRORS
+                    if Severity.ERROR.value in result[1]["validation_severity"].values
+                    else SubmissionState.VALIDATION_WITH_WARNINGS
+                )
+            else:
+                submission.state = SubmissionState.VALIDATION_SUCCESSFUL
+            submission.validation_json = build_validation_results(result)
+            submission_report = df_to_download(result[1])
+            print(f"start uploading report {submission.id}=============")
+            upload_to_storage(
+                period_code, lei, str(submission.id) + REPORT_QUALIFIER, submission_report.encode("utf-8")
             )
-        else:
-            submission.state = SubmissionState.VALIDATION_SUCCESSFUL
-        submission.validation_json = build_validation_results(result)
-        submission_report = df_to_download(result[1])
-        upload_to_storage(
-            period_code, lei, str(submission.id) + REPORT_QUALIFIER, submission_report.encode("utf-8")
-        )
-        if not exec_check["continue"]:
-            log.warning(f"Submission {submission.id} is expired, will not be updating final state with results.")
-            return
+            print(f"end uploading report {submission.id}==========")
+            if not exec_check["continue"]:
+                log.warning(f"Submission {submission.id} is expired, will not be updating final state with results.")
+                return
 
-        await update_submission(submission)
+            await update_submission(submission, incoming_session=session)
 
-    except RuntimeError as re:
-        log.error("The file is malformed", re, exc_info=True, stack_info=True)
-        submission.state = SubmissionState.SUBMISSION_UPLOAD_MALFORMED
-        await update_submission(submission)
+        except RuntimeError as re:
+            log.error("The file is malformed", re, exc_info=True, stack_info=True)
+            submission.state = SubmissionState.SUBMISSION_UPLOAD_MALFORMED
+            await update_submission(submission, incoming_session=session)
 
-    except Exception as e:
-        log.error(
-            f"Validation for submission {submission.id} did not complete due to an unexpected error.",
-            e,
-            exc_info=True,
-            stack_info=True,
-        )
-        submission.state = SubmissionState.VALIDATION_ERROR
-        await update_submission(submission)
+        except Exception as e:
+            log.error(
+                f"Validation for submission {submission.id} did not complete due to an unexpected error.",
+                e,
+                exc_info=True,
+                stack_info=True,
+            )
+            submission.state = SubmissionState.VALIDATION_ERROR
+            await update_submission(submission, incoming_session=session)
+    print(f"end validation {submission.id}------------------------------------------------------")
+    
 
 
 def build_validation_results(result):
