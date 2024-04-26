@@ -131,17 +131,12 @@ def build_validation_results(result):
         val_res["syntax_errors"]["details"] = val_json
         val_res["syntax_errors"]["count"] = len(val_res["syntax_errors"]["details"])
     else:
+        errors_list = [e for e in val_json if e["validation"]["severity"] == Severity.ERROR.value]
+        warnings_list = [e for e in val_json if e["validation"]["severity"] == Severity.WARNING.value]
         val_res = {
             "syntax_errors": {"count": 0, "details": []},
-            "logic_errors": {"count": 0, "details": []},
-            "logic_warnings": {"count": 0, "details": []},
+            "logic_errors": {"count": len(errors_list), "details": errors_list},
+            "logic_warnings": {"count": len(warnings_list), "details": warnings_list},
         }
-        for v in val_json:
-            if v["validation"]["severity"] == Severity.WARNING.value:
-                val_res["logic_warnings"]["details"].append(v)
-            elif v["validation"]["severity"] == Severity.ERROR.value:
-                val_res["logic_errors"]["details"].append(v)
-        val_res["logic_warnings"]["count"] = len(val_res["logic_warnings"]["details"])
-        val_res["logic_errors"]["count"] = len(val_res["logic_errors"]["details"])
 
     return val_res
