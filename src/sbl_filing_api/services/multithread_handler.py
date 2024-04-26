@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import random
 
 from sbl_filing_api.config import settings
 from sbl_filing_api.entities.models.dao import SubmissionDAO
@@ -11,15 +12,17 @@ logger = logging.getLogger(__name__)
 
 
 def handle_submission(period_code: str, lei: str, submission: SubmissionDAO, content: bytes, exec_check):
-    loop = asyncio.new_event_loop()
+    loop = asyncio.get_event_loop()
     try:
         coro = validate_and_update_submission(period_code, lei, submission, content, exec_check)
-        asyncio.set_event_loop(loop)
+        # asyncio.set_event_loop(loop)
         loop.run_until_complete(coro)
+        # t = asyncio.run_coroutine_threadsafe(coro, asyncio.get_event_loop())
+        # r = asyncio.as_completed([t])
     except Exception as e:
         logger.error(e, exc_info=True, stack_info=True)
-    finally:
-        loop.close()
+    # finally:
+    #     loop.close()
 
 
 async def check_future(future, submission_id, exec_check):

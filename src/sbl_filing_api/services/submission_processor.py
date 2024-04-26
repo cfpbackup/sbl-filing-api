@@ -21,6 +21,7 @@ log = logging.getLogger(__name__)
 
 REPORT_QUALIFIER = "_report"
 
+upload_fs: AbstractFileSystem = filesystem(settings.fs_upload_config.protocol)
 
 async def validation_monitor(period_code: str, lei: str, submission: SubmissionDAO, content: bytes):
     try:
@@ -88,7 +89,7 @@ async def validate_and_update_submission(
     submission.validation_ruleset_version = validator_version
     submission.state = SubmissionState.VALIDATION_IN_PROGRESS
 
-    print(f"start validation {submission.id}------------------------------------------------------")
+    log.error(f"start validation {submission.id}------------------------------------------------------")
 
     async with SessionLocal() as session:
         submission = await update_submission(submission, incoming_session=session)
@@ -110,11 +111,11 @@ async def validate_and_update_submission(
                 submission.state = SubmissionState.VALIDATION_SUCCESSFUL
             submission.validation_json = build_validation_results(result)
             submission_report = df_to_download(result[1])
-            print(f"start uploading report {submission.id}=============")
+            log.error(f"start uploading report {submission.id}=============")
             upload_to_storage(
                 period_code, lei, str(submission.id) + REPORT_QUALIFIER, submission_report.encode("utf-8")
             )
-            print(f"end uploading report {submission.id}==========")
+            log.error(f"end uploading report {submission.id}==========")
             if not exec_check["continue"]:
                 log.warning(f"Submission {submission.id} is expired, will not be updating final state with results.")
                 return
@@ -135,7 +136,7 @@ async def validate_and_update_submission(
             )
             submission.state = SubmissionState.VALIDATION_ERROR
             await update_submission(submission, incoming_session=session)
-    print(f"end validation {submission.id}------------------------------------------------------")
+    log.error(f"end validation {submission.id}------------------------------------------------------")
     
 
 
