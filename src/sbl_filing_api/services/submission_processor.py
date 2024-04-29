@@ -131,9 +131,7 @@ def build_validation_results(result):
     val_json = json.loads(df_to_json(result[1]))
 
     if result[2] == ValidationPhase.SYNTACTICAL.value:
-        val_res = {"syntax_errors": {"count": 0, "details": []}}
-        val_res["syntax_errors"]["details"] = val_json
-        val_res["syntax_errors"]["count"] = len(val_res["syntax_errors"]["details"])
+        val_res = {"syntax_errors": {"count": len(val_json), "details": val_json}}
     else:
         errors_list = [e for e in val_json if e["validation"]["severity"] == Severity.ERROR.value]
         warnings_list = [w for w in val_json if w["validation"]["severity"] == Severity.WARNING.value]
