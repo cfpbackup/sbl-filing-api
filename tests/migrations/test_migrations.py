@@ -69,7 +69,7 @@ def test_migrations(alembic_runner: MigrationContext, alembic_engine: Engine):
         "submitter",
         "state",
         "validation_ruleset_version",
-        "validation_results",
+        "validation_json",
         "confirmation_id",
     } == set([c["name"] for c in inspector.get_columns("submission")])
 
@@ -372,3 +372,12 @@ def test_migration_to_e1b0d044c840(alembic_runner: MigrationContext, alembic_eng
 
     assert "phone_number" in [c["name"] for c in inspector.get_columns("contact_info")]
     assert "phone" not in [c["name"] for c in inspector.get_columns("contact_info")]
+
+
+def test_migration_to_5492f53d1fa5(alembic_runner: MigrationContext, alembic_engine: Engine):
+    alembic_runner.migrate_up_to("5492f53d1fa5")
+
+    inspector = sqlalchemy.inspect(alembic_engine)
+
+    assert "validation_results" in [c["name"] for c in inspector.get_columns("submission")]
+    assert "validation_json" not in [c["name"] for c in inspector.get_columns("submission")]
