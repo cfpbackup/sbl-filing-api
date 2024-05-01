@@ -316,10 +316,10 @@ class TestSubmissionProcessor:
 
     async def test_build_validation_results_success(self):
         result = (True, pd.DataFrame, ValidationPhase.LOGICAL.value)
-        validation_json = submission_processor.build_validation_results(result)
-        assert validation_json["syntax_errors"]["count"] == 0
-        assert validation_json["logic_errors"]["count"] == 0
-        assert validation_json["logic_warnings"]["count"] == 0
+        validation_results = submission_processor.build_validation_results(result)
+        assert validation_results["syntax_errors"]["count"] == 0
+        assert validation_results["logic_errors"]["count"] == 0
+        assert validation_results["logic_warnings"]["count"] == 0
 
     async def test_build_validation_results_syntax_errors(self):
         result = (
@@ -356,8 +356,8 @@ class TestSubmissionProcessor:
             ),
             ValidationPhase.SYNTACTICAL.value,
         )
-        validation_json = submission_processor.build_validation_results(result)
-        assert validation_json["syntax_errors"]["count"] > 0
+        validation_results = submission_processor.build_validation_results(result)
+        assert validation_results["syntax_errors"]["count"] > 0
 
     async def test_build_validation_results_logic_warnings(self):
         result = (
@@ -394,10 +394,10 @@ class TestSubmissionProcessor:
             ),
             ValidationPhase.LOGICAL.value,
         )
-        validation_json = submission_processor.build_validation_results(result)
-        assert validation_json["syntax_errors"]["count"] == 0
-        assert validation_json["logic_errors"]["count"] == 0
-        assert validation_json["logic_warnings"]["count"] > 0
+        validation_results = submission_processor.build_validation_results(result)
+        assert validation_results["syntax_errors"]["count"] == 0
+        assert validation_results["logic_errors"]["count"] == 0
+        assert validation_results["logic_warnings"]["count"] > 0
 
     async def test_build_validation_results_logic_errors(self):
         result = (
@@ -434,10 +434,10 @@ class TestSubmissionProcessor:
             ),
             ValidationPhase.LOGICAL.value,
         )
-        validation_json = submission_processor.build_validation_results(result)
-        assert validation_json["syntax_errors"]["count"] == 0
-        assert validation_json["logic_errors"]["count"] > 0
-        assert validation_json["logic_warnings"]["count"] == 0
+        validation_results = submission_processor.build_validation_results(result)
+        assert validation_results["syntax_errors"]["count"] == 0
+        assert validation_results["logic_errors"]["count"] > 0
+        assert validation_results["logic_warnings"]["count"] == 0
 
     async def test_build_validation_results_logic_warnings_and_errors(self):
         result = (
@@ -487,7 +487,7 @@ class TestSubmissionProcessor:
             ),
             ValidationPhase.LOGICAL.value,
         )
-        validation_json = submission_processor.build_validation_results(result)
-        assert validation_json["syntax_errors"]["count"] == 0
-        assert validation_json["logic_errors"]["count"] > 0
-        assert validation_json["logic_warnings"]["count"] > 0
+        validation_results = submission_processor.build_validation_results(result)
+        assert validation_results["syntax_errors"]["count"] == 0
+        assert validation_results["logic_errors"]["count"] > 0
+        assert validation_results["logic_warnings"]["count"] > 0

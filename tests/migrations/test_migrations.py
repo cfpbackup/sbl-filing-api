@@ -69,7 +69,7 @@ def test_migrations(alembic_runner: MigrationContext, alembic_engine: Engine):
         "submitter",
         "state",
         "validation_ruleset_version",
-        "validation_json",
+        "validation_results",
         "confirmation_id",
     } == set([c["name"] for c in inspector.get_columns("submission")])
 
