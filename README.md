@@ -5,16 +5,17 @@
 | Name                                                    |    Stmts |     Miss |   Branch |   BrPart |   Cover |   Missing |
 |-------------------------------------------------------- | -------: | -------: | -------: | -------: | ------: | --------: |
 | src/sbl\_filing\_api/config.py                          |       52 |        0 |        8 |        1 |     98% |    14->19 |
-| src/sbl\_filing\_api/entities/engine/engine.py          |       10 |        0 |        0 |        0 |    100% |           |
+| src/sbl\_filing\_api/entities/engine/engine.py          |       11 |        0 |        0 |        0 |    100% |           |
 | src/sbl\_filing\_api/entities/models/dao.py             |       93 |        5 |        0 |        0 |     95% |40, 59, 74, 94, 121 |
 | src/sbl\_filing\_api/entities/models/dto.py             |       83 |        0 |       10 |        2 |     98% |65->69, 69->73 |
 | src/sbl\_filing\_api/entities/models/model\_enums.py    |       24 |        0 |        0 |        0 |    100% |           |
-| src/sbl\_filing\_api/entities/repos/submission\_repo.py |      108 |        0 |       18 |        2 |     98% |61->63, 68->70 |
+| src/sbl\_filing\_api/entities/repos/submission\_repo.py |      112 |        4 |       20 |        2 |     94% |61->63, 68->70, 107-110 |
 | src/sbl\_filing\_api/main.py                            |       41 |       11 |        2 |        0 |     74% |35-40, 44-48 |
 | src/sbl\_filing\_api/routers/dependencies.py            |       17 |        0 |        8 |        2 |     92% |13->exit, 21->exit |
-| src/sbl\_filing\_api/routers/filing.py                  |      155 |        0 |      120 |        0 |    100% |           |
-| src/sbl\_filing\_api/services/submission\_processor.py  |       83 |        0 |       16 |        0 |    100% |           |
-|                                               **TOTAL** |  **666** |   **16** |  **182** |    **7** | **97%** |           |
+| src/sbl\_filing\_api/routers/filing.py                  |      164 |        0 |      120 |        0 |    100% |           |
+| src/sbl\_filing\_api/services/multithread\_handler.py   |       21 |        2 |        2 |        0 |     91% |     18-19 |
+| src/sbl\_filing\_api/services/submission\_processor.py  |       80 |        4 |       20 |        1 |     95% |   127-135 |
+|                                               **TOTAL** |  **698** |   **26** |  **190** |    **8** | **96%** |           |
 
 6 empty files skipped.
 
