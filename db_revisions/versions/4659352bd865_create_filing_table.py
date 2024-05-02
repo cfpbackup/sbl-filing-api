@@ -5,10 +5,12 @@ Revises: 5a775dd75356
 Create Date: 2024-01-08 14:42:44.052389
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "4659352bd865"
@@ -16,8 +18,19 @@ down_revision: Union[str, None] = "5a775dd75356"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
+state = postgresql.ENUM(
+    "FILING_STARTED",
+    "FILING_INSTITUTION_APPROVED",
+    "FILING_IN_PROGRESS",
+    "FILING_COMPLETE",
+    name="filingstate",
+    create_type=False,
+)
+
 
 def upgrade() -> None:
+    state.create(op.get_bind(), checkfirst=True)
+
     op.create_table(
         "filing",
         sa.Column("id", sa.INTEGER, autoincrement=True),
@@ -25,13 +38,7 @@ def upgrade() -> None:
         sa.Column("lei", sa.String, nullable=False),
         sa.Column(
             "state",
-            sa.Enum(
-                "FILING_STARTED",
-                "FILING_INSTITUTION_APPROVED",
-                "FILING_IN_PROGRESS",
-                "FILING_COMPLETE",
-                name="filingstate",
-            ),
+            state,
         ),
         sa.Column("institution_snapshot_id", sa.String, nullable=False),
         sa.Column("contact_info", sa.String),
@@ -43,3 +50,5 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_table("filing")
+
+    state.drop(op.get_bind(), checkfirst=False)
