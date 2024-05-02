@@ -22,7 +22,6 @@ filing_type = postgresql.ENUM("ANNUAL", name="filingtype", create_type=False)
 
 
 def upgrade() -> None:
-
     filing_type.create(op.get_bind(), checkfirst=True)
 
     op.create_table(
