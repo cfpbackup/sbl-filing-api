@@ -22,12 +22,12 @@ depends_on: Union[str, Sequence[str], None] = None
 old_options = (
     'SUBMIT',
     'ACCEPT',
-    'SIGNED',
+    'SIGN',
 )
 new_options = (
     'SUBMIT',
     'ACCEPT',
-    'SIGNED',
+    'SIGN',
     'CREATE'
 )
 
@@ -40,7 +40,7 @@ def upgrade() -> None:
     if "sqlite" not in context.get_context().dialect.name:
         op.execute("ALTER TYPE useractiontype RENAME TO useractiontype_old")
         op.execute(f"CREATE TYPE useractiontype AS ENUM{new_options}")
-        op.execute("ALTER TABLE user_action ALTER COLUMN action_type TYPE useractiontype USING user_action::text::useractiontype")
+        op.execute("ALTER TABLE user_action ALTER COLUMN action_type TYPE useractiontype USING action_type::text::useractiontype")
         op.execute("DROP TYPE useractiontype_old")
 
 
@@ -51,5 +51,5 @@ def downgrade() -> None:
     if "sqlite" not in context.get_context().dialect.name:
         op.execute("ALTER TYPE useractiontype RENAME TO useractiontype_old")
         op.execute(f"CREATE TYPE useractiontype AS ENUM{old_options}")
-        op.execute("ALTER TABLE user_action ALTER COLUMN action_type TYPE useractiontype USING user_action::text::useractiontype")
+        op.execute("ALTER TABLE user_action ALTER COLUMN action_type TYPE useractiontype USING action_type::text::useractiontype")
         op.execute("DROP TYPE useractiontype_old")
