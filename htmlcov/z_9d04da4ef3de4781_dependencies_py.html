@@ -3,9 +3,9 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Coverage for src/sbl_filing_api/routers/dependencies.py: 92%</title>
-    <link rel="icon" sizes="32x32" href="favicon_32.png">
-    <link rel="stylesheet" href="style.css" type="text/css">
-    <script src="coverage_html.js" defer></script>
+    <link rel="icon" sizes="32x32" href="favicon_32_cb_58284776.png">
+    <link rel="stylesheet" href="style_cb_8e611ae1.css" type="text/css">
+    <script src="coverage_html_cb_da166b87.js" defer></script>
 </head>
 <body class="pyfile">
 <header>
@@ -17,7 +17,7 @@
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
             <label for="help_panel_state">
-                <img id="keyboard_icon" src="keybd_closed.png" alt="Show/hide keyboard shortcuts">
+                <img id="keyboard_icon" src="keybd_closed_cb_ce680311.png" alt="Show/hide keyboard shortcuts">
             </label>
             <div id="help_panel">
                 <p class="legend">Shortcuts on this page</p>
@@ -66,8 +66,8 @@
             <a id="indexLink" class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a id="nextFileLink" class="nav" href="z_9d04da4ef3de4781_filing_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.5.0">coverage.py v7.5.0</a>,
-            created at 2024-05-03 17:36 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.5.1">coverage.py v7.5.1</a>,
+            created at 2024-05-07 00:10 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -94,7 +94,7 @@
     <p class="run"><span class="n"><a id="t10" href="#t10">10</a></span><span class="t"><span class="key">def</span> <span class="nam">verify_lei</span><span class="op">(</span><span class="nam">request</span><span class="op">:</span> <span class="nam">Request</span><span class="op">,</span> <span class="nam">lei</span><span class="op">:</span> <span class="nam">str</span><span class="op">)</span> <span class="op">-></span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t11" href="#t11">11</a></span><span class="t">    <span class="nam">res</span> <span class="op">=</span> <span class="nam">httpx</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="nam">settings</span><span class="op">.</span><span class="nam">user_fi_api_url</span> <span class="op">+</span> <span class="nam">lei</span><span class="op">,</span> <span class="nam">headers</span><span class="op">=</span><span class="op">{</span><span class="str">"authorization"</span><span class="op">:</span> <span class="nam">request</span><span class="op">.</span><span class="nam">headers</span><span class="op">[</span><span class="str">"authorization"</span><span class="op">]</span><span class="op">}</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t12" href="#t12">12</a></span><span class="t">    <span class="nam">lei_obj</span> <span class="op">=</span> <span class="nam">res</span><span class="op">.</span><span class="nam">json</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="par run show_par"><span class="n"><a id="t13" href="#t13">13</a></span><span class="t">    <span class="key">if</span> <span class="key">not</span> <span class="nam">lei_obj</span><span class="op">[</span><span class="str">"is_active"</span><span class="op">]</span><span class="op">:</span>&nbsp;</span><span class="r"><span class="annotate short">13&#x202F;&#x219B;&#x202F;exit</span><span class="annotate long">line 13 didn't return from function 'verify_lei', because the condition on line 13 was never false</span></span></p>
+    <p class="par run show_par"><span class="n"><a id="t13" href="#t13">13</a></span><span class="t">    <span class="key">if</span> <span class="key">not</span> <span class="nam">lei_obj</span><span class="op">[</span><span class="str">"is_active"</span><span class="op">]</span><span class="op">:</span>&nbsp;</span><span class="r"><span class="annotate short">13&#x202F;&#x219B;&#x202F;exit</span><span class="annotate long">line 13 didn't return from function 'verify_lei', because the condition on line 13 was always true</span></span></p>
     <p class="run"><span class="n"><a id="t14" href="#t14">14</a></span><span class="t">        <span class="key">raise</span> <span class="nam">RegTechHttpException</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t15" href="#t15">15</a></span><span class="t">            <span class="nam">status_code</span><span class="op">=</span><span class="nam">HTTPStatus</span><span class="op">.</span><span class="nam">FORBIDDEN</span><span class="op">,</span> <span class="nam">name</span><span class="op">=</span><span class="str">"Request Forbidden"</span><span class="op">,</span> <span class="nam">detail</span><span class="op">=</span><span class="fst">f"</span><span class="fst">LEI </span><span class="op">{</span><span class="nam">lei</span><span class="op">}</span><span class="fst"> is in an inactive state.</span><span class="fst">"</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t16" href="#t16">16</a></span><span class="t">        <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -102,7 +102,7 @@
     <p class="pln"><span class="n"><a id="t18" href="#t18">18</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t19" href="#t19">19</a></span><span class="t"><span class="key">def</span> <span class="nam">verify_user_lei_relation</span><span class="op">(</span><span class="nam">request</span><span class="op">:</span> <span class="nam">Request</span><span class="op">,</span> <span class="nam">lei</span><span class="op">:</span> <span class="nam">str</span> <span class="op">=</span> <span class="key">None</span><span class="op">)</span> <span class="op">-></span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t20" href="#t20">20</a></span><span class="t">    <span class="key">if</span> <span class="nam">os</span><span class="op">.</span><span class="nam">getenv</span><span class="op">(</span><span class="str">"ENV"</span><span class="op">,</span> <span class="str">"LOCAL"</span><span class="op">)</span> <span class="op">!=</span> <span class="str">"LOCAL"</span> <span class="key">and</span> <span class="nam">lei</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="par run show_par"><span class="n"><a id="t21" href="#t21">21</a></span><span class="t">        <span class="key">if</span> <span class="nam">request</span><span class="op">.</span><span class="nam">user</span><span class="op">.</span><span class="nam">is_authenticated</span><span class="op">:</span>&nbsp;</span><span class="r"><span class="annotate short">21&#x202F;&#x219B;&#x202F;exit</span><span class="annotate long">line 21 didn't return from function 'verify_user_lei_relation', because the condition on line 21 was never false</span></span></p>
+    <p class="par run show_par"><span class="n"><a id="t21" href="#t21">21</a></span><span class="t">        <span class="key">if</span> <span class="nam">request</span><span class="op">.</span><span class="nam">user</span><span class="op">.</span><span class="nam">is_authenticated</span><span class="op">:</span>&nbsp;</span><span class="r"><span class="annotate short">21&#x202F;&#x219B;&#x202F;exit</span><span class="annotate long">line 21 didn't return from function 'verify_user_lei_relation', because the condition on line 21 was always true</span></span></p>
     <p class="run"><span class="n"><a id="t22" href="#t22">22</a></span><span class="t">            <span class="nam">institutions</span> <span class="op">=</span> <span class="nam">request</span><span class="op">.</span><span class="nam">user</span><span class="op">.</span><span class="nam">institutions</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t23" href="#t23">23</a></span><span class="t">            <span class="key">if</span> <span class="nam">lei</span> <span class="key">not</span> <span class="key">in</span> <span class="nam">institutions</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t24" href="#t24">24</a></span><span class="t">                <span class="key">raise</span> <span class="nam">RegTechHttpException</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
@@ -118,8 +118,8 @@
             <a class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a class="nav" href="z_9d04da4ef3de4781_filing_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.5.0">coverage.py v7.5.0</a>,
-            created at 2024-05-03 17:36 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.5.1">coverage.py v7.5.1</a>,
+            created at 2024-05-07 00:10 +0000
         </p>
     </div>
 </footer>
