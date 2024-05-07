@@ -29,7 +29,6 @@ from sbl_filing_api.services import submission_processor
 from sbl_filing_api.services.multithread_handler import handle_submission, check_future
 
 from sqlalchemy.exc import IntegrityError
-from tempfile import NamedTemporaryFile
 from sbl_filing_api.config import regex_configs
 
 
@@ -916,12 +915,9 @@ class TestFilingApi:
             filename="file1.csv",
         )
 
-        file_content = b"Test"
-        temp_file = NamedTemporaryFile(delete=False, suffix=".csv")
-        temp_file.write(file_content)
-        temp_file.close()
+        file_content = "Test"
         file_mock = mocker.patch("sbl_filing_api.services.submission_processor.get_from_storage")
-        file_mock.return_value = temp_file.name
+        file_mock.return_value = [c for c in file_content]
 
         client = TestClient(app_fixture)
         res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions/latest/report")
@@ -937,8 +933,6 @@ class TestFilingApi:
         res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions/latest/report")
         sub_mock.assert_called_with(ANY, "1234567890ZXWVUTSR00", "2024")
         assert res.status_code == 204
-
-        os.unlink(temp_file.name)
 
     async def test_get_sub_report(self, mocker: MockerFixture, app_fixture: FastAPI, authed_user_mock: Mock):
         sub_mock = mocker.patch("sbl_filing_api.entities.repos.submission_repo.get_submission")
@@ -959,12 +953,9 @@ class TestFilingApi:
             filename="file1.csv",
         )
 
-        file_content = b"Test"
-        temp_file = NamedTemporaryFile(delete=False, suffix=".csv")
-        temp_file.write(file_content)
-        temp_file.close()
+        file_content = "Test"
         file_mock = mocker.patch("sbl_filing_api.services.submission_processor.get_from_storage")
-        file_mock.return_value = temp_file.name
+        file_mock.return_value = [c for c in file_content]
 
         client = TestClient(app_fixture)
         res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions/2/report")
@@ -980,8 +971,6 @@ class TestFilingApi:
         res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions/1/report")
         sub_mock.assert_called_with(ANY, 1)
         assert res.status_code == 404
-
-        os.unlink(temp_file.name)
 
     def test_contact_info_invalid_email(self, mocker: MockerFixture, app_fixture: FastAPI, authed_user_mock: Mock):
         client = TestClient(app_fixture)

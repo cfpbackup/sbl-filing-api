@@ -1,8 +1,7 @@
 import asyncio
-
 from concurrent.futures import ProcessPoolExecutor
 from fastapi import Depends, Request, UploadFile, BackgroundTasks, status
-from fastapi.responses import Response, JSONResponse, FileResponse
+from fastapi.responses import Response, JSONResponse, StreamingResponse
 from multiprocessing import Manager
 from regtech_api_commons.api.router_wrapper import Router
 from regtech_api_commons.api.exceptions import RegTechHttpException
@@ -162,7 +161,7 @@ async def upload_file(
         )
         submission = await repo.add_submission(request.state.db_session, filing.id, file.filename, submitter.id)
         try:
-            await submission_processor.upload_to_storage(
+            submission_processor.upload_to_storage(
                 period_code, lei, submission.id, content, file.filename.split(".")[-1]
             )
 
@@ -301,10 +300,14 @@ async def put_contact_info(request: Request, lei: str, period_code: str, contact
 async def get_latest_submission_report(request: Request, lei: str, period_code: str):
     latest_sub = await repo.get_latest_submission(request.state.db_session, lei, period_code)
     if latest_sub:
-        file_data = await submission_processor.get_from_storage(
+        file_data = submission_processor.get_from_storage(
             period_code, lei, str(latest_sub.id) + submission_processor.REPORT_QUALIFIER
         )
-        return FileResponse(path=file_data, media_type="text/csv", filename=f"{latest_sub.id}_validation_report.csv")
+        return StreamingResponse(
+            content=file_data,
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="{latest_sub.id}_validation_report.csv"'},
+        )
     return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
 
 
@@ -316,8 +319,12 @@ async def get_latest_submission_report(request: Request, lei: str, period_code: 
 async def get_submission_report(request: Request, response: Response, lei: str, period_code: str, id: int):
     sub = await repo.get_submission(request.state.db_session, id)
     if sub:
-        file_data = await submission_processor.get_from_storage(
+        file_data = submission_processor.get_from_storage(
             period_code, lei, str(sub.id) + submission_processor.REPORT_QUALIFIER
         )
-        return FileResponse(path=file_data, media_type="text/csv", filename=f"{sub.id}_validation_report.csv")
+        return StreamingResponse(
+            content=file_data,
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="{sub.id}_validation_report.csv"'},
+        )
     response.status_code = status.HTTP_404_NOT_FOUND

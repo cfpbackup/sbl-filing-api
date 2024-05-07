@@ -1,4 +1,5 @@
 import json
+from typing import Generator
 import pandas as pd
 import importlib.metadata as imeta
 import logging
@@ -12,10 +13,9 @@ from sbl_filing_api.entities.engine.engine import SessionLocal
 from sbl_filing_api.entities.models.dao import SubmissionDAO, SubmissionState
 from sbl_filing_api.entities.repos.submission_repo import update_submission
 from http import HTTPStatus
-from fsspec import AbstractFileSystem, filesystem
-from sbl_filing_api.config import FsProtocol, settings
+from sbl_filing_api.config import settings
+from sbl_filing_api.services import file_handler
 from regtech_api_commons.api.exceptions import RegTechHttpException
-import boto3
 
 log = logging.getLogger(__name__)
 
@@ -41,41 +41,18 @@ def validate_file_processable(file: UploadFile) -> None:
         )
 
 
-async def upload_to_storage(period_code: str, lei: str, file_identifier: str, content: bytes, extension: str = "csv"):
+def upload_to_storage(period_code: str, lei: str, file_identifier: str, content: bytes, extension: str = "csv") -> None:
     try:
-        if settings.fs_upload_config.protocol == FsProtocol.FILE:
-            fs: AbstractFileSystem = filesystem(settings.fs_upload_config.protocol)
-            fs.mkdirs(f"{settings.fs_upload_config.root}/upload/{period_code}/{lei}", exist_ok=True)
-            with fs.open(
-                f"{settings.fs_upload_config.root}/upload/{period_code}/{lei}/{file_identifier}.{extension}", "wb"
-            ) as f:
-                f.write(content)
-        else:
-            s3 = boto3.client("s3")
-            r = s3.put_object(
-                Bucket=settings.fs_upload_config.root,
-                Key=f"upload/{period_code}/{lei}/{file_identifier}.{extension}",
-                Body=content,
-            )
-            log.debug(
-                "s3 upload response for lei: %s, period: %s file: %s, response: %s",
-                lei,
-                period_code,
-                file_identifier,
-                r,
-            )
+        file_handler.upload(path=f"upload/{period_code}/{lei}/{file_identifier}.{extension}", content=content)
     except Exception as e:
         raise RegTechHttpException(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR, name="Upload Failure", detail="Failed to upload file"
         ) from e
 
 
-async def get_from_storage(period_code: str, lei: str, file_identifier: str, extension: str = "csv"):
+def get_from_storage(period_code: str, lei: str, file_identifier: str, extension: str = "csv") -> Generator:
     try:
-        fs: AbstractFileSystem = filesystem(**settings.fs_download_config.__dict__)
-        file_path = f"{settings.fs_upload_config.root}/upload/{period_code}/{lei}/{file_identifier}.{extension}"
-        with fs.open(file_path, "r") as f:
-            return f.name
+        return file_handler.download(f"upload/{period_code}/{lei}/{file_identifier}.{extension}")
     except Exception as e:
         raise RegTechHttpException(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR, name="Download Failure", detail="Failed to read file."
@@ -109,7 +86,7 @@ async def validate_and_update_submission(
 
             submission.validation_results = build_validation_results(result)
             submission_report = df_to_download(result[1])
-            await upload_to_storage(
+            upload_to_storage(
                 period_code, lei, str(submission.id) + REPORT_QUALIFIER, submission_report.encode("utf-8")
             )
 
