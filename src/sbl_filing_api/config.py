@@ -24,15 +24,6 @@ class FsProtocol(StrEnum):
 class FsUploadConfig(BaseModel):
     protocol: str = FsProtocol.FILE.value
     root: str
-    mkdir: bool = True
-
-
-class FsDownloadConfig(BaseModel):
-    protocol: str = FsProtocol.FILE.value
-    target_protocol: str = None
-    cache_storage: str = None
-    check_files: bool = True
-    version_aware: bool = True
 
 
 class Settings(BaseSettings):
@@ -45,7 +36,6 @@ class Settings(BaseSettings):
     conn: PostgresDsn | None = None
 
     fs_upload_config: FsUploadConfig
-    fs_download_config: FsDownloadConfig
 
     submission_file_type: str = "text/csv"
     submission_file_extension: str = "csv"

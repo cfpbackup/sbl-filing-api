@@ -1,8 +1,9 @@
 import asyncio
+import logging
 
 from concurrent.futures import ProcessPoolExecutor
 from fastapi import Depends, Request, UploadFile, BackgroundTasks, status
-from fastapi.responses import Response, JSONResponse, FileResponse
+from fastapi.responses import Response, JSONResponse, StreamingResponse
 from multiprocessing import Manager
 from regtech_api_commons.api.router_wrapper import Router
 from regtech_api_commons.api.exceptions import RegTechHttpException
@@ -30,6 +31,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.authentication import requires
 
 from sbl_filing_api.routers.dependencies import verify_user_lei_relation
+
+logger = logging.getLogger(__name__)
 
 
 async def set_db(request: Request, session: Annotated[AsyncSession, Depends(get_session)]):
@@ -152,6 +155,7 @@ async def upload_file(
             name="Filing Not Found",
             detail=f"There is no Filing for LEI {lei} in period {period_code}, unable to submit file.",
         )
+    submission = None
     try:
         submitter = await repo.add_user_action(
             request.state.db_session,
@@ -162,7 +166,7 @@ async def upload_file(
         )
         submission = await repo.add_submission(request.state.db_session, filing.id, file.filename, submitter.id)
         try:
-            await submission_processor.upload_to_storage(
+            submission_processor.upload_to_storage(
                 period_code, lei, submission.id, content, file.filename.split(".")[-1]
             )
 
@@ -186,6 +190,20 @@ async def upload_file(
         return submission
 
     except Exception as e:
+        if submission:
+            try:
+                submission.state = SubmissionState.UPLOAD_FAILED
+                submission = await repo.update_submission(request.state.db_session, submission)
+            except Exception as ex:
+                logger.error(
+                    (
+                        f"Error updating submission {submission.id} to {SubmissionState.UPLOAD_FAILED} state during error handling,"
+                        f" the submission may be stuck in the {SubmissionState.SUBMISSION_STARTED} or {SubmissionState.SUBMISSION_UPLOADED} state."
+                    ),
+                    ex,
+                    exc_info=True,
+                    stack_info=True,
+                )
         raise RegTechHttpException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             name="Submission Unprocessable",
@@ -301,10 +319,14 @@ async def put_contact_info(request: Request, lei: str, period_code: str, contact
 async def get_latest_submission_report(request: Request, lei: str, period_code: str):
     latest_sub = await repo.get_latest_submission(request.state.db_session, lei, period_code)
     if latest_sub:
-        file_data = await submission_processor.get_from_storage(
+        file_data = submission_processor.get_from_storage(
             period_code, lei, str(latest_sub.id) + submission_processor.REPORT_QUALIFIER
         )
-        return FileResponse(path=file_data, media_type="text/csv", filename=f"{latest_sub.id}_validation_report.csv")
+        return StreamingResponse(
+            content=file_data,
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="{latest_sub.id}_validation_report.csv"'},
+        )
     return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
 
 
@@ -316,8 +338,12 @@ async def get_latest_submission_report(request: Request, lei: str, period_code: 
 async def get_submission_report(request: Request, response: Response, lei: str, period_code: str, id: int):
     sub = await repo.get_submission(request.state.db_session, id)
     if sub:
-        file_data = await submission_processor.get_from_storage(
+        file_data = submission_processor.get_from_storage(
             period_code, lei, str(sub.id) + submission_processor.REPORT_QUALIFIER
         )
-        return FileResponse(path=file_data, media_type="text/csv", filename=f"{sub.id}_validation_report.csv")
+        return StreamingResponse(
+            content=file_data,
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="{sub.id}_validation_report.csv"'},
+        )
     response.status_code = status.HTTP_404_NOT_FOUND

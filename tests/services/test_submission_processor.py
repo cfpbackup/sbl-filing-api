@@ -6,7 +6,7 @@ from sbl_filing_api.services import submission_processor
 from fastapi import HTTPException
 from unittest.mock import Mock, ANY
 from pytest_mock import MockerFixture
-from sbl_filing_api.config import FsProtocol, settings
+from sbl_filing_api.config import settings
 from sbl_filing_api.entities.models.dao import SubmissionDAO, SubmissionState
 from regtech_data_validator.create_schemas import ValidationPhase
 from regtech_data_validator.checks import Severity
@@ -15,72 +15,33 @@ from regtech_api_commons.api.exceptions import RegTechHttpException
 
 class TestSubmissionProcessor:
     @pytest.fixture
-    def mock_fs(self, mocker: MockerFixture) -> Mock:
-        fs_mock_patch = mocker.patch("sbl_filing_api.services.submission_processor.AbstractFileSystem")
-        return fs_mock_patch.return_value
-
-    @pytest.fixture
-    def mock_fs_func(self, mocker: MockerFixture, mock_fs: Mock) -> Mock:
-        fs_func_mock = mocker.patch("sbl_filing_api.services.submission_processor.filesystem")
-        fs_func_mock.return_value = mock_fs
-        return fs_func_mock
-
-    @pytest.fixture
     def mock_upload_file(self, mocker: MockerFixture) -> Mock:
         file_mock = mocker.patch("fastapi.UploadFile")
         return file_mock.return_value
 
-    async def test_upload(self, mocker: MockerFixture, mock_fs_func: Mock, mock_fs: Mock):
-        with mocker.mock_open(mock_fs.open):
-            await submission_processor.upload_to_storage("test_period", "test", "test", b"test content local")
-        mock_fs_func.assert_called()
-        mock_fs.mkdirs.assert_called()
-        mock_fs.open.assert_called_with("../upload/upload/test_period/test/test.csv", "wb")
-        file_handle = mock_fs.open()
-        file_handle.write.assert_called_with(b"test content local")
+    async def test_upload(self, mocker: MockerFixture):
+        upload_mock = mocker.patch("sbl_filing_api.services.file_handler.upload")
+        submission_processor.upload_to_storage("test_period", "test", "test", b"test content local")
+        upload_mock.assert_called_once_with(path="upload/test_period/test/test.csv", content=b"test content local")
 
-    async def test_read_from_storage(self, mocker: MockerFixture, mock_fs_func: Mock, mock_fs: Mock):
-        await submission_processor.get_from_storage("2024", "1234567890", "1_report")
-        mock_fs_func.assert_called_with(**settings.fs_download_config.__dict__)
-        mock_fs.open.assert_called_with("../upload/upload/2024/1234567890/1_report.csv", "r")
+    async def test_read_from_storage(self, mocker: MockerFixture):
+        download_mock = mocker.patch("sbl_filing_api.services.file_handler.download")
+        submission_processor.get_from_storage("2024", "1234567890", "1_report")
+        download_mock.assert_called_with("upload/2024/1234567890/1_report.csv")
 
-    async def test_upload_s3(self, mocker: MockerFixture):
-        default_fs_proto = settings.fs_upload_config.protocol
-        settings.fs_upload_config.protocol = FsProtocol.S3.value
-
-        boto3_mock = mocker.patch("sbl_filing_api.services.submission_processor.boto3.client")
-        log_mock = mocker.patch("sbl_filing_api.services.submission_processor.log")
-        s3_mock = Mock(["put_object"])
-        s3_mock.put_object.return_value = {"test": "response"}
-        boto3_mock.return_value = s3_mock
-
-        await submission_processor.upload_to_storage("test_period", "test", "test", b"test content s3")
-
-        boto3_mock.assert_called_with("s3")
-        s3_mock.put_object.assert_called_with(
-            Bucket=settings.fs_upload_config.root, Key="upload/test_period/test/test.csv", Body=b"test content s3"
-        )
-        log_mock.debug.assert_called_with(
-            "s3 upload response for lei: %s, period: %s file: %s, response: %s",
-            "test",
-            "test_period",
-            "test",
-            {"test": "response"},
-        )
-
-        settings.fs_upload_config.protocol = default_fs_proto
-
-    async def test_upload_failure(self, mocker: MockerFixture, mock_fs_func: Mock, mock_fs: Mock):
-        mock_fs.mkdirs.side_effect = IOError("test")
+    async def test_upload_failure(self, mocker: MockerFixture):
+        upload_mock = mocker.patch("sbl_filing_api.services.file_handler.upload")
+        upload_mock.side_effect = IOError("test")
         with pytest.raises(Exception) as e:
-            await submission_processor.upload_to_storage("test_period", "test", "test", b"test content")
+            submission_processor.upload_to_storage("test_period", "test", "test", b"test content")
         assert isinstance(e.value, RegTechHttpException)
         assert e.value.name == "Upload Failure"
 
-    async def test_read_failure(self, mocker: MockerFixture, mock_fs_func: Mock, mock_fs: Mock):
-        mock_fs.open.side_effect = IOError("test")
+    async def test_read_failure(self, mocker: MockerFixture):
+        download_mock = mocker.patch("sbl_filing_api.services.file_handler.download")
+        download_mock.side_effect = IOError("test")
         with pytest.raises(Exception) as e:
-            await submission_processor.get_from_storage("2024", "1234567890", "1_report")
+            submission_processor.get_from_storage("2024", "1234567890", "1_report")
         assert isinstance(e.value, RegTechHttpException)
         assert e.value.name == "Download Failure"
 

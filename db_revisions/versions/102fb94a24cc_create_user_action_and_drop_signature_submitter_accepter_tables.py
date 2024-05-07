@@ -10,6 +10,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 
 # revision identifiers, used by Alembic.
@@ -18,8 +19,18 @@ down_revision: Union[str, None] = "4cd30d188352"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
+action_type = postgresql.ENUM(
+    "SUBMIT",
+    "ACCEPT",
+    "SIGN",
+    name="useractiontype",
+    create_type=False,
+)
+
 
 def upgrade() -> None:
+    action_type.create(op.get_bind(), checkfirst=True)
+
     op.create_table(
         "user_action",
         sa.Column("id", sa.INTEGER, autoincrement=True),
@@ -28,12 +39,7 @@ def upgrade() -> None:
         sa.Column("user_email", sa.String, nullable=False),
         sa.Column(
             "action_type",
-            sa.Enum(
-                "SUBMIT",
-                "ACCEPT",
-                "SIGN",
-                name="useractiontype",
-            ),
+            action_type,
         ),
         sa.Column("timestamp", sa.DateTime(), server_default=sa.func.now(), nullable=False),
         sa.PrimaryKeyConstraint("id", name="user_action_pkey"),
@@ -102,3 +108,4 @@ def downgrade() -> None:
 
     op.drop_table("filing_signature")
     op.drop_table("user_action")
+    action_type.drop(op.get_bind(), checkfirst=False)

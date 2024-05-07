@@ -29,7 +29,6 @@ from sbl_filing_api.services import submission_processor
 from sbl_filing_api.services.multithread_handler import handle_submission, check_future
 
 from sqlalchemy.exc import IntegrityError
-from tempfile import NamedTemporaryFile
 from sbl_filing_api.config import regex_configs
 
 
@@ -402,6 +401,66 @@ class TestFilingApi:
         )
         res = client.post("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions", files=file)
         assert mock_update_submission.call_args.args[1].state == SubmissionState.UPLOAD_FAILED
+        assert res.status_code == 500
+        assert res.json()["error_detail"] == "Error while trying to process SUBMIT User Action"
+
+    def test_submission_second_update_fail(
+        self,
+        mocker: MockerFixture,
+        app_fixture: FastAPI,
+        authed_user_mock: Mock,
+        submission_csv: str,
+        get_filing_mock: Mock,
+    ):
+        return_sub = SubmissionDAO(
+            id=1,
+            filing=1,
+            state=SubmissionState.SUBMISSION_UPLOADED,
+            filename="submission.csv",
+        )
+
+        log_mock = mocker.patch("sbl_filing_api.routers.filing.logger.error")
+
+        mock_validate_file = mocker.patch("sbl_filing_api.services.submission_processor.validate_file_processable")
+        mock_validate_file.return_value = None
+
+        async_mock = AsyncMock(return_value=return_sub)
+        mocker.patch("sbl_filing_api.entities.repos.submission_repo.add_submission", side_effect=async_mock)
+
+        mock_upload = mocker.patch("sbl_filing_api.services.submission_processor.upload_to_storage")
+        mock_upload.return_value = None
+
+        mocker.patch(
+            "sbl_filing_api.entities.repos.submission_repo.update_submission",
+            side_effect=Exception("Can't connect to database"),
+        )
+
+        mock_add_submitter = mocker.patch("sbl_filing_api.entities.repos.submission_repo.add_user_action")
+        mock_add_submitter.side_effect = AsyncMock(
+            return_value=UserActionDAO(
+                id=2,
+                user_id="123456-7890-ABCDEF-GHIJ",
+                user_name="test submitter",
+                user_email="test@local.host",
+                action_type=UserActionType.SUBMIT,
+                timestamp=datetime.datetime.now(),
+            )
+        )
+
+        file = {"file": ("submission.csv", open(submission_csv, "rb"))}
+
+        client = TestClient(app_fixture)
+
+        res = client.post("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions", files=file)
+        log_mock.assert_called_with(
+            (
+                f"Error updating submission 1 to {SubmissionState.UPLOAD_FAILED} state during error handling,"
+                f" the submission may be stuck in the {SubmissionState.SUBMISSION_STARTED} or {SubmissionState.SUBMISSION_UPLOADED} state."
+            ),
+            ANY,
+            exc_info=True,
+            stack_info=True,
+        )
         assert res.status_code == 500
         assert res.json()["error_detail"] == "Error while trying to process SUBMIT User Action"
 
@@ -916,12 +975,9 @@ class TestFilingApi:
             filename="file1.csv",
         )
 
-        file_content = b"Test"
-        temp_file = NamedTemporaryFile(delete=False, suffix=".csv")
-        temp_file.write(file_content)
-        temp_file.close()
+        file_content = "Test"
         file_mock = mocker.patch("sbl_filing_api.services.submission_processor.get_from_storage")
-        file_mock.return_value = temp_file.name
+        file_mock.return_value = [c for c in file_content]
 
         client = TestClient(app_fixture)
         res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions/latest/report")
@@ -937,8 +993,6 @@ class TestFilingApi:
         res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions/latest/report")
         sub_mock.assert_called_with(ANY, "1234567890ZXWVUTSR00", "2024")
         assert res.status_code == 204
-
-        os.unlink(temp_file.name)
 
     async def test_get_sub_report(self, mocker: MockerFixture, app_fixture: FastAPI, authed_user_mock: Mock):
         sub_mock = mocker.patch("sbl_filing_api.entities.repos.submission_repo.get_submission")
@@ -959,12 +1013,9 @@ class TestFilingApi:
             filename="file1.csv",
         )
 
-        file_content = b"Test"
-        temp_file = NamedTemporaryFile(delete=False, suffix=".csv")
-        temp_file.write(file_content)
-        temp_file.close()
+        file_content = "Test"
         file_mock = mocker.patch("sbl_filing_api.services.submission_processor.get_from_storage")
-        file_mock.return_value = temp_file.name
+        file_mock.return_value = [c for c in file_content]
 
         client = TestClient(app_fixture)
         res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions/2/report")
@@ -980,8 +1031,6 @@ class TestFilingApi:
         res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions/1/report")
         sub_mock.assert_called_with(ANY, 1)
         assert res.status_code == 404
-
-        os.unlink(temp_file.name)
 
     def test_contact_info_invalid_email(self, mocker: MockerFixture, app_fixture: FastAPI, authed_user_mock: Mock):
         client = TestClient(app_fixture)

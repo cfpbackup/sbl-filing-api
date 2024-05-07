@@ -5,10 +5,12 @@ Revises: 4e8ae26c1a22
 Create Date: 2024-01-30 13:15:44.323900
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op, context
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 
 # revision identifiers, used by Alembic.
@@ -25,16 +27,17 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    state = postgresql.ENUM(
+        "FILING_STARTED",
+        "FILING_INSTITUTION_APPROVED",
+        "FILING_IN_PROGRESS",
+        "FILING_COMPLETE",
+        name="filingstate",
+        create_type=False,
+    )
+    state.create(op.get_bind(), checkfirst=True)
+
     op.add_column(
         "filing",
-        sa.Column(
-            "state",
-            sa.Enum(
-                "FILING_STARTED",
-                "FILING_INSTITUTION_APPROVED",
-                "FILING_IN_PROGRESS",
-                "FILING_COMPLETE",
-                name="filingstate",
-            ),
-        ),
+        sa.Column("state", state),
     )
