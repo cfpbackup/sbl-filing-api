@@ -1,7 +1,7 @@
 """add total records to submission
 
 Revision ID: 7356a7d7036d
-Revises: 5492f53d1fa5
+Revises: c7238487f08d
 Create Date: 2024-05-07 11:02:46.846411
 
 """
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "7356a7d7036d"
-down_revision: Union[str, None] = "5492f53d1fa5"
+down_revision: Union[str, None] = "c7238487f08d"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
