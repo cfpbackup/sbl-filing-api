@@ -35,6 +35,7 @@ class SubmissionDAO(Base):
     validation_results: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=True)
     submission_time: Mapped[datetime] = mapped_column(server_default=func.now())
     filename: Mapped[str]
+    total_records: Mapped[int] = mapped_column(nullable=True)
 
     def __str__(self):
         return f"Submission ID: {self.id}, State: {self.state}, Ruleset: {self.validation_ruleset_version}, Filing Period: {self.filing}, Submission: {self.submission_time}"

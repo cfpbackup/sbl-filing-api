@@ -23,6 +23,7 @@ class SubmissionDTO(BaseModel):
     validation_results: Dict[str, Any] | None = None
     submission_time: datetime | None = None
     filename: str
+    total_records: int | None = None
     submitter: UserActionDTO
     accepter: UserActionDTO | None = None
 

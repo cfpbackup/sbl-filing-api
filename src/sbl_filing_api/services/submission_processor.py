@@ -70,6 +70,7 @@ async def validate_and_update_submission(
             submission = await update_submission(session, submission)
 
             df = pd.read_csv(BytesIO(content), dtype=str, na_filter=False)
+            submission.total_records = len(df)
 
             # Validate Phases
             result = validate_phases(df, {"lei": lei})
