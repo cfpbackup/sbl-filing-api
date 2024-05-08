@@ -104,6 +104,7 @@ class TestSubmissionProcessor:
         assert successful_submission_mock.mock_calls[0].args[1].state == SubmissionState.VALIDATION_IN_PROGRESS
         assert successful_submission_mock.mock_calls[0].args[1].validation_ruleset_version == "0.1.0"
         assert successful_submission_mock.mock_calls[1].args[1].state == "VALIDATION_SUCCESSFUL"
+        assert successful_submission_mock.mock_calls[1].args[1].total_records == 1
 
     async def test_validate_and_update_warnings(
         self,
@@ -133,6 +134,7 @@ class TestSubmissionProcessor:
         assert warning_submission_mock.mock_calls[0].args[1].state == SubmissionState.VALIDATION_IN_PROGRESS
         assert warning_submission_mock.mock_calls[0].args[1].validation_ruleset_version == "0.1.0"
         assert warning_submission_mock.mock_calls[1].args[1].state == "VALIDATION_WITH_WARNINGS"
+        assert warning_submission_mock.mock_calls[1].args[1].total_records == 1
 
     async def test_validate_and_update_errors(
         self,
@@ -163,6 +165,7 @@ class TestSubmissionProcessor:
         assert error_submission_mock.mock_calls[0].args[1].state == SubmissionState.VALIDATION_IN_PROGRESS
         assert error_submission_mock.mock_calls[0].args[1].validation_ruleset_version == "0.1.0"
         assert error_submission_mock.mock_calls[1].args[1].state == "VALIDATION_WITH_ERRORS"
+        assert error_submission_mock.mock_calls[1].args[1].total_records == 1
 
     async def test_validate_and_update_submission_malformed(
         self,

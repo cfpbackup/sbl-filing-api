@@ -381,3 +381,11 @@ def test_migration_to_5492f53d1fa5(alembic_runner: MigrationContext, alembic_eng
 
     assert "validation_results" in [c["name"] for c in inspector.get_columns("submission")]
     assert "validation_json" not in [c["name"] for c in inspector.get_columns("submission")]
+
+
+def test_migrations_to_7356a7d7036d(alembic_runner: MigrationContext, alembic_engine: Engine):
+    alembic_runner.migrate_up_to("7356a7d7036d")
+
+    inspector = sqlalchemy.inspect(alembic_engine)
+
+    assert "total_records" in set([c["name"] for c in inspector.get_columns("submission")])
