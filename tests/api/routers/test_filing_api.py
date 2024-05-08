@@ -217,7 +217,6 @@ class TestFilingApi:
         res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions/latest")
         result = res.json()
         assert res.status_code == 404
-    
 
     def test_unauthed_get_submission_by_id(self, mocker: MockerFixture, app_fixture: FastAPI):
         client = TestClient(app_fixture)
