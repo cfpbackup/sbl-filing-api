@@ -1008,7 +1008,7 @@ class TestFilingApi:
         # verify Filing Not Found RegTechHttpException returned when filing does not exist
         get_filing_mock.return_value = None
         client = TestClient(app_fixture)
-        res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions/latest")
+        res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/submissions/latest/report")
         assert res.status_code == 404
 
     async def test_get_sub_report(self, mocker: MockerFixture, app_fixture: FastAPI, authed_user_mock: Mock):
