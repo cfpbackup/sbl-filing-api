@@ -10,6 +10,7 @@ from typing import Sequence, Union
 
 from alembic import op, context
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 
 # revision identifiers, used by Alembic.
@@ -19,21 +20,23 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+filing_task_state_enum = postgresql.ENUM(
+    "NOT_STARTED",
+    "IN_PROGRESS",
+    "COMPLETED",
+    name="filingtaskstate",
+    create_type=False,
+)
+
+
 def upgrade() -> None:
+    filing_task_state_enum.create(op.get_bind(), checkfirst=True)
     op.create_table(
         "filing_task_state",
         sa.Column("id", sa.INTEGER, autoincrement=True),
         sa.Column("filing", sa.Integer),
         sa.Column("task_name", sa.String),
-        sa.Column(
-            "state",
-            sa.Enum(
-                "NOT_STARTED",
-                "IN_PROGRESS",
-                "COMPLETED",
-                name="filingtaskstate",
-            ),
-        ),
+        sa.Column("state", filing_task_state_enum),
         sa.Column("user", sa.String, nullable=False),
         sa.Column("change_timestamp", sa.DateTime, nullable=False),
         sa.PrimaryKeyConstraint("id", name="filing_task_state_pkey"),
@@ -44,5 +47,4 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_table("filing_task_state")
-    if "sqlite" not in context.get_context().dialect.name:
-        op.execute(sa.DDL("DROP TYPE filingtaskstate"))
+    filing_task_state_enum.drop(op.get_bind(), checkfirst=False)
