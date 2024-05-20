@@ -11,12 +11,11 @@
 | src/sbl\_filing\_api/entities/models/model\_enums.py    |       24 |        0 |        0 |        0 |    100% |           |
 | src/sbl\_filing\_api/entities/repos/submission\_repo.py |      117 |        4 |       22 |        2 |     94% |61->63, 68->70, 107-110 |
 | src/sbl\_filing\_api/main.py                            |       41 |       11 |        2 |        0 |     74% |35-40, 44-48 |
-| src/sbl\_filing\_api/routers/dependencies.py            |       17 |        0 |        8 |        2 |     92% |13->exit, 21->exit |
 | src/sbl\_filing\_api/routers/filing.py                  |      179 |        0 |      126 |        0 |    100% |           |
 | src/sbl\_filing\_api/services/file\_handler.py          |       22 |        0 |        8 |        0 |    100% |           |
 | src/sbl\_filing\_api/services/multithread\_handler.py   |       26 |        2 |        4 |        0 |     93% |     18-19 |
 | src/sbl\_filing\_api/services/submission\_processor.py  |       71 |        4 |       14 |        1 |     94% |   105-113 |
-|                                               **TOTAL** |  **730** |   **26** |  **202** |    **8** | **96%** |           |
+|                                               **TOTAL** |  **713** |   **26** |  **194** |    **6** | **96%** |           |
 
 6 empty files skipped.
 
