@@ -13,9 +13,9 @@
 | src/sbl\_filing\_api/main.py                            |       41 |       11 |        2 |        0 |     74% |35-40, 44-48 |
 | src/sbl\_filing\_api/routers/filing.py                  |      179 |        0 |      126 |        0 |    100% |           |
 | src/sbl\_filing\_api/services/file\_handler.py          |       22 |        0 |        8 |        0 |    100% |           |
-| src/sbl\_filing\_api/services/multithread\_handler.py   |       26 |        2 |        4 |        0 |     93% |     18-19 |
+| src/sbl\_filing\_api/services/multithread\_handler.py   |       27 |        2 |        2 |        0 |     93% |     18-19 |
 | src/sbl\_filing\_api/services/submission\_processor.py  |       71 |        4 |       14 |        1 |     94% |   105-113 |
-|                                               **TOTAL** |  **714** |   **26** |  **194** |    **6** | **96%** |           |
+|                                               **TOTAL** |  **715** |   **26** |  **192** |    **6** | **96%** |           |
 
 6 empty files skipped.
 
