@@ -217,7 +217,9 @@ class TestSubmissionProcessor:
         await submission_processor.validate_and_update_submission(
             "2024", "123456790", mock_sub, None, {"continue": True}
         )
-        log_mock.exception.assert_called_with("Validation for submission %d did not complete due to an unexpected error.", mock_sub.id)
+        log_mock.exception.assert_called_with(
+            "Validation for submission %d did not complete due to an unexpected error.", mock_sub.id
+        )
 
     async def test_validation_expired(
         self,
