@@ -339,7 +339,10 @@ async def get_latest_submission_report(request: Request, lei: str, period_code: 
         return StreamingResponse(
             content=file_data,
             media_type="text/csv",
-            headers={"Content-Disposition": f'attachment; filename="{latest_sub.id}_validation_report.csv"'},
+            headers={
+                "Content-Disposition": f'attachment; filename="{latest_sub.id}_validation_report.csv"',
+                "Cache-Control": "no-store",
+            },
         )
     return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
 
@@ -358,6 +361,9 @@ async def get_submission_report(request: Request, response: Response, lei: str, 
         return StreamingResponse(
             content=file_data,
             media_type="text/csv",
-            headers={"Content-Disposition": f'attachment; filename="{sub.id}_validation_report.csv"'},
+            headers={
+                "Content-Disposition": f'attachment; filename="{sub.id}_validation_report.csv"',
+                "Cache-Control": "no-store",
+            },
         )
     response.status_code = status.HTTP_404_NOT_FOUND
