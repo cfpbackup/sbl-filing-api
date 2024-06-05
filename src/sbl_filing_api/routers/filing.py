@@ -143,7 +143,7 @@ async def sign_filing(request: Request, lei: str, period_code: str):
 @router.post("/institutions/{lei}/filings/{period_code}/submissions", response_model=SubmissionDTO)
 @requires("authenticated")
 async def upload_file(
-    request: Request, lei: str, period_code: str, file: UploadFile, background_tasks: BackgroundTasks
+    request: Request, lei: str, period_code: str, file: UploadFile
 ):
     submission_processor.validate_file_processable(file)
     content = await file.read()
@@ -184,8 +184,7 @@ async def upload_file(
         exec_check = Manager().dict()
         exec_check["continue"] = True
         loop = asyncio.get_event_loop()
-        future = loop.run_in_executor(executor, handle_submission, period_code, lei, submission, content, exec_check)
-        background_tasks.add_task(check_future, future, submission.id, exec_check)
+        loop.run_in_executor(executor, handle_submission, period_code, lei, submission, content, exec_check)
 
         return submission
 
