@@ -4,7 +4,7 @@
 
 | Name                                                    |    Stmts |     Miss |   Branch |   BrPart |   Cover |   Missing |
 |-------------------------------------------------------- | -------: | -------: | -------: | -------: | ------: | --------: |
-| src/sbl\_filing\_api/config.py                          |       45 |        0 |        8 |        1 |     98% |    14->19 |
+| src/sbl\_filing\_api/config.py                          |       48 |        0 |        8 |        1 |     98% |    14->19 |
 | src/sbl\_filing\_api/entities/engine/engine.py          |       11 |        0 |        0 |        0 |    100% |           |
 | src/sbl\_filing\_api/entities/models/dao.py             |       94 |        5 |        0 |        0 |     95% |41, 60, 75, 95, 122 |
 | src/sbl\_filing\_api/entities/models/dto.py             |       84 |        0 |       10 |        2 |     98% |66->70, 70->74 |
@@ -14,8 +14,8 @@
 | src/sbl\_filing\_api/routers/filing.py                  |      179 |        0 |      126 |        0 |    100% |           |
 | src/sbl\_filing\_api/services/file\_handler.py          |       22 |        0 |        8 |        0 |    100% |           |
 | src/sbl\_filing\_api/services/multithread\_handler.py   |       27 |        2 |        2 |        0 |     93% |     18-19 |
-| src/sbl\_filing\_api/services/submission\_processor.py  |       71 |        0 |       14 |        0 |    100% |           |
-|                                               **TOTAL** |  **715** |   **22** |  **192** |    **5** | **97%** |           |
+| src/sbl\_filing\_api/services/submission\_processor.py  |       73 |        0 |       16 |        0 |    100% |           |
+|                                               **TOTAL** |  **720** |   **22** |  **194** |    **5** | **97%** |           |
 
 6 empty files skipped.
 
