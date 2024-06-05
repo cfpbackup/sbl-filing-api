@@ -2,14 +2,14 @@ import asyncio
 import logging
 
 from concurrent.futures import ProcessPoolExecutor
-from fastapi import Depends, Request, UploadFile, BackgroundTasks, status
+from fastapi import Depends, Request, UploadFile, status
 from fastapi.responses import Response, JSONResponse, StreamingResponse
 from multiprocessing import Manager
 from regtech_api_commons.api.router_wrapper import Router
 from regtech_api_commons.api.exceptions import RegTechHttpException
 from sbl_filing_api.entities.models.model_enums import UserActionType
 from sbl_filing_api.services import submission_processor
-from sbl_filing_api.services.multithread_handler import handle_submission, check_future
+from sbl_filing_api.services.multithread_handler import handle_submission
 from typing import Annotated, List
 
 from sbl_filing_api.entities.engine.engine import get_session
@@ -142,9 +142,7 @@ async def sign_filing(request: Request, lei: str, period_code: str):
 
 @router.post("/institutions/{lei}/filings/{period_code}/submissions", response_model=SubmissionDTO)
 @requires("authenticated")
-async def upload_file(
-    request: Request, lei: str, period_code: str, file: UploadFile
-):
+async def upload_file(request: Request, lei: str, period_code: str, file: UploadFile):
     submission_processor.validate_file_processable(file)
     content = await file.read()
 
