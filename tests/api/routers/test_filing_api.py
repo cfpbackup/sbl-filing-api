@@ -1,8 +1,6 @@
 import asyncio
 import datetime
 from http import HTTPStatus
-import httpx
-import os
 import pytest
 
 from copy import deepcopy
@@ -10,7 +8,7 @@ from datetime import datetime as dt
 
 from unittest.mock import ANY, Mock, AsyncMock
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 from pytest_mock import MockerFixture
 
@@ -24,9 +22,8 @@ from sbl_filing_api.entities.models.dao import (
 )
 from sbl_filing_api.entities.models.dto import ContactInfoDTO
 from sbl_filing_api.entities.models.model_enums import UserActionType
-from sbl_filing_api.routers.dependencies import verify_lei
 from sbl_filing_api.services import submission_processor
-from sbl_filing_api.services.multithread_handler import handle_submission, check_future
+from sbl_filing_api.services.multithread_handler import handle_submission
 
 from sqlalchemy.exc import IntegrityError
 from sbl_filing_api.config import regex_configs
@@ -291,8 +288,6 @@ class TestFilingApi:
         mock_get_loop.return_value = mock_event_loop
         mock_event_loop.run_in_executor.return_value = asyncio.Future()
 
-        mock_background_task = mocker.patch("fastapi.BackgroundTasks.add_task")
-
         async_mock = AsyncMock(return_value=return_sub)
         mock_add_submission = mocker.patch(
             "sbl_filing_api.entities.repos.submission_repo.add_submission", side_effect=async_mock
@@ -312,10 +307,6 @@ class TestFilingApi:
             ANY, handle_submission, "2024", "1234567890ZXWVUTSR00", return_sub, open(submission_csv, "rb").read(), ANY
         )
         assert mock_event_loop.run_in_executor.call_args.args[6]["continue"]
-        mock_background_task.assert_called_with(
-            check_future, mock_event_loop.run_in_executor.return_value, return_sub.id, ANY
-        )
-        assert mock_background_task.call_args.args[3]["continue"]
         assert mock_update_submission.call_args.args[1].state == SubmissionState.SUBMISSION_UPLOADED
         assert res.status_code == 200
         assert res.json()["id"] == 1
@@ -327,9 +318,12 @@ class TestFilingApi:
         assert res.json()["submitter"]["action_type"] == UserActionType.SUBMIT
 
         get_filing_mock.return_value = None
-        res = client.post("/v1/filing/institutions/ABCDEFG/filings/2024/submissions", files=files)
+        res = client.post("/v1/filing/institutions/1234567890ABCDEFGH00/filings/2024/submissions", files=files)
         assert res.status_code == 404
-        assert res.json()["error_detail"] == "There is no Filing for LEI ABCDEFG in period 2024, unable to submit file."
+        assert (
+            res.json()["error_detail"]
+            == "There is no Filing for LEI 1234567890ABCDEFGH00 in period 2024, unable to submit file."
+        )
 
     def test_unauthed_upload_file(self, mocker: MockerFixture, app_fixture: FastAPI, submission_csv: str):
         files = {"file": ("submission.csv", open(submission_csv, "rb"))}
@@ -594,27 +588,16 @@ class TestFilingApi:
         get_filing_mock: Mock,
         get_filing_period_mock: Mock,
     ):
-        mocker.patch.dict(os.environ, {"ENV": "TEST"})
         client = TestClient(app_fixture)
         res = client.get("/v1/filing/periods")
         assert res.status_code == 200
 
-        res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/")
+        res = client.get("/v1/filing/institutions/1234567890ZXWVUTSR01/filings/2024/")
         assert res.status_code == 403
-        assert res.json()["error_detail"] == "LEI 1234567890ZXWVUTSR00 is not associated with the user."
+        assert res.json()["error_detail"] == "LEI 1234567890ZXWVUTSR01 is not associated with the user."
 
         res = client.get("/v1/filing/institutions/1234567890ABCDEFGH00/filings/2024/")
         assert res.status_code == 200
-
-    def test_verify_lei_dependency(self, mocker: MockerFixture):
-        mock_user_fi_service = mocker.patch("sbl_filing_api.routers.dependencies.httpx.get")
-        mock_user_fi_service.return_value = httpx.Response(200, json={"is_active": False})
-        with pytest.raises(HTTPException) as http_exc:
-            request = Request(scope={"type": "http", "headers": [(b"authorization", b"123")]})
-            verify_lei(request=request, lei="1234567890ZXWVUTSR00")
-        assert isinstance(http_exc.value, HTTPException)
-        assert http_exc.value.status_code == 403
-        assert http_exc.value.detail == "LEI 1234567890ZXWVUTSR00 is in an inactive state."
 
     async def test_unauthed_get_contact_info(self, app_fixture: FastAPI, unauthed_user_mock: Mock):
         client = TestClient(app_fixture)
@@ -998,6 +981,7 @@ class TestFilingApi:
         assert res.text == "Test"
         assert res.headers["content-type"] == "text/csv; charset=utf-8"
         assert res.headers["content-disposition"] == 'attachment; filename="1_validation_report.csv"'
+        assert res.headers["Cache-Control"] == "no-store"
 
         sub_mock.return_value = []
         client = TestClient(app_fixture)
@@ -1042,6 +1026,7 @@ class TestFilingApi:
         assert res.text == "Test"
         assert res.headers["content-type"] == "text/csv; charset=utf-8"
         assert res.headers["content-disposition"] == 'attachment; filename="2_validation_report.csv"'
+        assert res.headers["Cache-Control"] == "no-store"
 
         sub_mock.return_value = []
         client = TestClient(app_fixture)
