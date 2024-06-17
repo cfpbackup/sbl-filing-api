@@ -118,14 +118,10 @@ def build_validation_results(results: ValidationResults):
     if results.phase == ValidationPhase.SYNTACTICAL:
         val_res = {
             "syntax_errors": {
-                "single_field_count": int(results.error_counts.single_field_count),
-                "multi_field_count": int(
-                    results.error_counts.multi_field_count
-                ),  # this will always be zero for syntax errors
-                "register_count": int(
-                    results.error_counts.register_count
-                ),  # this will always be zero for syntax errors
-                "total_count": int(results.error_counts.total_count),
+                "single_field_count": results.error_counts.single_field_count,
+                "multi_field_count": results.error_counts.multi_field_count,  # this will always be zero for syntax errors
+                "register_count": results.error_counts.register_count,  # this will always be zero for syntax errors
+                "total_count": results.error_counts.total_count,
                 "details": val_json,
             }
         }
@@ -141,17 +137,17 @@ def build_validation_results(results: ValidationResults):
                 "details": [],
             },
             "logic_errors": {
-                "single_field_count": int(results.error_counts.single_field_count),
-                "multi_field_count": int(results.error_counts.multi_field_count),
-                "register_count": int(results.error_counts.register_count),
-                "total_count": int(results.error_counts.total_count),
+                "single_field_count": results.error_counts.single_field_count,
+                "multi_field_count": results.error_counts.multi_field_count,
+                "register_count": results.error_counts.register_count,
+                "total_count": results.error_counts.total_count,
                 "details": errors_list,
             },
             "logic_warnings": {
-                "single_field_count": int(results.warning_counts.single_field_count),
-                "multi_field_count": int(results.warning_counts.multi_field_count),
-                "register_count": int(results.warning_counts.register_count),
-                "total_count": int(results.warning_counts.total_count),
+                "single_field_count": results.warning_counts.single_field_count,
+                "multi_field_count": results.warning_counts.multi_field_count,
+                "register_count": results.warning_counts.register_count,
+                "total_count": results.warning_counts.total_count,
                 "details": warnings_list,
             },
         }
