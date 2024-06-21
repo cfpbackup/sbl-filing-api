@@ -330,7 +330,7 @@ async def get_latest_submission_report(request: Request, lei: str, period_code: 
             detail=f"There is no Filing for LEI {lei} in period {period_code}, unable to get latest submission for it.",
         )
     latest_sub = await repo.get_latest_submission(request.state.db_session, lei, period_code)
-    if latest_sub:
+    if latest_sub and not latest_sub.state == SubmissionState.VALIDATION_IN_PROGRESS:
         file_data = submission_processor.get_from_storage(
             period_code, lei, str(latest_sub.id) + submission_processor.REPORT_QUALIFIER
         )
@@ -342,7 +342,7 @@ async def get_latest_submission_report(request: Request, lei: str, period_code: 
                 "Cache-Control": "no-store",
             },
         )
-    return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
+    return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=None)
 
 
 @router.get(
@@ -352,7 +352,7 @@ async def get_latest_submission_report(request: Request, lei: str, period_code: 
 @requires("authenticated")
 async def get_submission_report(request: Request, response: Response, lei: str, period_code: str, id: int):
     sub = await repo.get_submission(request.state.db_session, id)
-    if sub:
+    if sub and not sub.state == SubmissionState.VALIDATION_IN_PROGRESS:
         file_data = submission_processor.get_from_storage(
             period_code, lei, str(sub.id) + submission_processor.REPORT_QUALIFIER
         )
