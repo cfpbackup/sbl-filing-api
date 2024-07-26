@@ -6,8 +6,8 @@ RUN pip install poetry
 
 COPY poetry.lock pyproject.toml alembic.ini README.md ./
 
-COPY ./src ./src
-COPY ./db_revisions ./db_revisions
+COPY --chown=sbl:sbl ./src ./src
+COPY --chown=sbl:sbl ./db_revisions ./db_revisions
 
 RUN poetry config virtualenvs.create false
 RUN poetry install --only main
