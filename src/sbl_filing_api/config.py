@@ -10,6 +10,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from regtech_api_commons.oauth2.config import KeycloakSettings
 from regtech_regex.regex_config import RegexConfigs
 
+from pydantic_settings.sources import DotenvType, ENV_FILE_SENTINEL
+
 env_files_to_load = [".env"]
 if os.getenv("ENV", "LOCAL") == "LOCAL":
     file_dir = os.path.dirname(os.path.realpath(__file__))
@@ -63,8 +65,8 @@ class Settings(BaseSettings):
     max_json_records: int = 10000
     max_json_group_size: int = 0
 
-    def __init__(self, **data):
-        super().__init__(**data)
+    def __init__(self, _env_file: DotenvType | None = ENV_FILE_SENTINEL, **data):
+        super().__init__(_env_file=_env_file, **data)
 
     @field_validator("conn", mode="before")
     @classmethod
