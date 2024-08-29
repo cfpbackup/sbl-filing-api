@@ -83,7 +83,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=env_files_to_load, extra="allow", env_nested_delimiter="__")
 
 
-settings = Settings()
+settings = Settings(_env_file=env_files_to_load)
 
 kc_settings = KeycloakSettings(_env_file=env_files_to_load)
 
