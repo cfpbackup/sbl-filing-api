@@ -146,7 +146,7 @@ async def sign_filing(request: Request, lei: str, period_code: str):
 async def upload_file(request: Request, lei: str, period_code: str, file: UploadFile):
     submission_processor.validate_file_processable(file)
     content = await file.read()
-
+    
     filing = await repo.get_filing(request.state.db_session, lei, period_code)
     if not filing:
         raise RegTechHttpException(

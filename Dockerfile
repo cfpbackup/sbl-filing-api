@@ -1,5 +1,6 @@
-FROM ghcr.io/cfpb/regtech/sbl/python-alpine:3.12
-
+#FROM ghcr.io/cfpb/regtech/sbl/python-alpine:3.12
+FROM python:3.12
+RUN groupadd -r sbl && useradd -r -g sbl -m -d /home/sbl sbl
 ENV UVICORN_LOG_LEVEL=info
 
 WORKDIR /usr/app
