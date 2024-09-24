@@ -674,7 +674,7 @@ class TestFilingApi:
                 hq_address_state="TS",
                 hq_address_zip="12345",
                 phone_number="112-345-6789",
-                extension="x54321",
+                phone_ext="x54321",
                 email="name_1@email.test",
             ),
             creator_id=1,
@@ -701,7 +701,7 @@ class TestFilingApi:
             "hq_address_zip": "12345",
             "phone_number": "112-345-6789",
             "email": "name_1@email.test",
-            "extension": "x54321",
+            "phone_ext": "x54321",
         }
 
         res = client.put(
@@ -724,7 +724,7 @@ class TestFilingApi:
         assert result["contact_info"]["hq_address_state"] == "TS"
         assert result["contact_info"]["hq_address_zip"] == "12345"
         assert result["contact_info"]["phone_number"] == "112-345-6789"
-        assert result["contact_info"]["extension"] == "x54321"
+        assert result["contact_info"]["phone_ext"] == "x54321"
         assert result["contact_info"]["email"] == "name_1@email.test"
 
         mock.assert_called_with(
@@ -742,7 +742,7 @@ class TestFilingApi:
                 hq_address_zip="12345",
                 email="name_1@email.test",
                 phone_number="112-345-6789",
-                extension="x54321",
+                phone_ext="x54321",
             ),
         )
 
@@ -852,7 +852,7 @@ class TestFilingApi:
             "hq_address_state": "TS",
             "hq_address_zip": "12345",
             "phone_number": "112-345-6789",
-            "extension": "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+            "phone_ext": "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
             "email": "name_1@email.test",
         }
 
@@ -861,6 +861,8 @@ class TestFilingApi:
         )
 
         assert res.status_code == 422
+        json_error = res.json()
+        assert "'String should have at most 254 characters'" in json_error["error_detail"]
 
     async def test_accept_submission(self, mocker: MockerFixture, app_fixture: FastAPI, authed_user_mock: Mock):
         user_action_submit = UserActionDAO(

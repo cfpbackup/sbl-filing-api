@@ -21,9 +21,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     with op.batch_alter_table("contact_info") as batch_op:
-        batch_op.add_column(sa.Column("extension", sa.String(254), nullable=True))
+        batch_op.add_column(sa.Column("phone_ext", sa.String(254), nullable=True))
 
 
 def downgrade() -> None:
     with op.batch_alter_table("contact_info") as batch_op:
-        batch_op.drop_column("extension")
+        batch_op.drop_column("phone_ext")

@@ -396,4 +396,4 @@ def test_migrations_to_ba8234fe9eb5(alembic_runner: MigrationContext, alembic_en
 
     inspector = sqlalchemy.inspect(alembic_engine)
 
-    assert "extension" in set([c["name"] for c in inspector.get_columns("contact_info")])
+    assert "phone_ext" in set([c["name"] for c in inspector.get_columns("contact_info")])
