@@ -194,6 +194,7 @@ class TestSubmissionRepo:
             hq_address_state="TS",
             hq_address_zip="12345",
             phone_number="212-345-6789",
+            extension="x54321",
             email="test2@cfpb.gov",
         )
         transaction_session.add(contact_info1)
@@ -483,6 +484,7 @@ class TestSubmissionRepo:
         assert res.contact_info.hq_address_state == "TS"
         assert res.contact_info.hq_address_zip == "12345"
         assert res.contact_info.phone_number == "212-345-6789"
+        assert res.contact_info.extension == "x54321"
         assert res.contact_info.email == "test2@cfpb.gov"
 
     async def test_create_contact_info(self, transaction_session: AsyncSession):
@@ -538,6 +540,7 @@ class TestSubmissionRepo:
                 hq_address_state="TS",
                 hq_address_zip="12345",
                 phone_number="212-345-6789",
+                extension="x12345",
                 email="test2_upd@cfpb.gov",
             ),
         )
@@ -555,6 +558,7 @@ class TestSubmissionRepo:
         assert filing.contact_info.hq_address_state == "TS"
         assert filing.contact_info.hq_address_zip == "12345"
         assert filing.contact_info.phone_number == "212-345-6789"
+        assert filing.contact_info.extension == "x12345"
         assert filing.contact_info.email == "test2_upd@cfpb.gov"
 
     async def test_get_user_action(self, query_session: AsyncSession):
