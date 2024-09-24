@@ -6,8 +6,8 @@
 |-------------------------------------------------------- | -------: | -------: | -------: | -------: | ------: | --------: |
 | src/sbl\_filing\_api/config.py                          |       57 |        2 |        8 |        1 |     95% |     15-16 |
 | src/sbl\_filing\_api/entities/engine/engine.py          |       11 |        0 |        0 |        0 |    100% |           |
-| src/sbl\_filing\_api/entities/models/dao.py             |       94 |        5 |        0 |        0 |     95% |41, 60, 75, 95, 122 |
-| src/sbl\_filing\_api/entities/models/dto.py             |       84 |        0 |       10 |        2 |     98% |66->70, 70->74 |
+| src/sbl\_filing\_api/entities/models/dao.py             |       95 |        5 |        0 |        0 |     95% |41, 60, 75, 96, 123 |
+| src/sbl\_filing\_api/entities/models/dto.py             |       85 |        0 |       10 |        2 |     98% |67->71, 71->75 |
 | src/sbl\_filing\_api/entities/models/model\_enums.py    |       24 |        0 |        0 |        0 |    100% |           |
 | src/sbl\_filing\_api/entities/repos/submission\_repo.py |      117 |        4 |       22 |        2 |     94% |61->63, 68->70, 107-110 |
 | src/sbl\_filing\_api/main.py                            |       41 |       11 |        2 |        0 |     74% |35-40, 44-48 |
@@ -15,7 +15,7 @@
 | src/sbl\_filing\_api/services/file\_handler.py          |       22 |        0 |        8 |        0 |    100% |           |
 | src/sbl\_filing\_api/services/multithread\_handler.py   |       27 |        2 |        2 |        0 |     93% |     18-19 |
 | src/sbl\_filing\_api/services/submission\_processor.py  |       73 |        0 |       16 |        0 |    100% |           |
-|                                               **TOTAL** |  **729** |   **24** |  **194** |    **5** | **97%** |           |
+|                                               **TOTAL** |  **731** |   **24** |  **194** |    **5** | **97%** |           |
 
 6 empty files skipped.
 
