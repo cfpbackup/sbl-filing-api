@@ -2,12 +2,12 @@ from typing import Generator
 import polars as pl
 import importlib.metadata as imeta
 import logging
-
+import psutil
 from fastapi import UploadFile
 from regtech_data_validator.validator import validate_batch_csv
 from regtech_data_validator.data_formatters import df_to_dicts, df_to_download
 from regtech_data_validator.checks import Severity
-from regtech_data_validator.validation_results import ValidationPhase
+from regtech_data_validator.validation_results import ValidationPhase, ValidationResults
 from sbl_filing_api.entities.engine.engine import SessionLocal
 from sbl_filing_api.entities.models.dao import SubmissionDAO, SubmissionState
 from sbl_filing_api.entities.repos.submission_repo import update_submission
@@ -70,45 +70,62 @@ async def validate_and_update_submission(
 ):
     async with SessionLocal() as session:
         try:
+            from datetime import datetime
+            start = datetime.now()
             validator_version = imeta.version("regtech-data-validator")
             submission.validation_ruleset_version = validator_version
             submission.state = SubmissionState.VALIDATION_IN_PROGRESS
             submission = await update_submission(session, submission)
 
+
+            v_start = datetime.now()
+            file_path = generate_file_path(period_code, lei, submission.id)
+            
+            total_errors = 0
             final_phase = ValidationPhase.LOGICAL
             all_findings = []
             final_df = pl.DataFrame()
 
-            file_path = generate_file_path(period_code, lei, submission.id)
-            for findings, phase in validate_batch_csv(file_path, context={"lei": lei}, batch_size=50000, batch_count=5):
-                final_phase = phase
-                all_findings.append(findings)
+
+            for validation_results in validate_batch_csv(file_path, context={"lei": lei}, batch_size=50000, batch_count=1):
+                final_phase = validation_results.phase
+                all_findings.append(validation_results)
+
 
             if all_findings:
-                final_df = pl.concat(all_findings, how="diagonal")
+                final_df = pl.concat([v.findings for v in all_findings], how="diagonal")
 
-            submission.validation_results = build_validation_results(final_df, final_phase)
 
-            if not all_findings:
+            submission.validation_results = build_validation_results(final_df, all_findings, final_phase)
+
+            if final_df.is_empty():
                 submission.state = SubmissionState.VALIDATION_SUCCESSFUL
+            elif (
+                final_phase == ValidationPhase.SYNTACTICAL
+                or submission.validation_results["logic_errors"]["total_count"] > 0
+            ):
+                submission.state = SubmissionState.VALIDATION_WITH_ERRORS
             else:
-                submission.state = (
-                    SubmissionState.VALIDATION_WITH_ERRORS
-                    if final_df.filter(pl.col("validation_type") == Severity.ERROR).height > 0
-                    else SubmissionState.VALIDATION_WITH_WARNINGS
-                )
+                submission.state = SubmissionState.VALIDATION_WITH_WARNINGS
 
             report_path = generate_file_path(period_code, lei, f"{submission.id}_report")
             log.info(f"Writing csv report to {report_path}")
+            w_start = datetime.now()
+            log.info(f"Memory before download: {psutil.Process().memory_info().rss / (1024*1024)}MB")
             df_to_download(final_df, report_path)
+            log.info(f"df_to_download Processing took {(datetime.now() - w_start).total_seconds()} seconds")
+            log.info(f"Memory after download: {psutil.Process().memory_info().rss / (1024*1024)}MB")
             # upload_to_storage(
             #    period_code, lei, str(submission.id) + REPORT_QUALIFIER, submission_report.encode("utf-8")
             # )
             if not exec_check["continue"]:
                 log.warning(f"Submission {submission.id} is expired, will not be updating final state with results.")
                 return
-
+            update_start = datetime.now()
             await update_submission(session, submission)
+            log.info(f"db update Processing took {(datetime.now() - update_start).total_seconds()} seconds")
+            log.info(f"Processing took {(datetime.now() - start).total_seconds()} seconds")
+            log.info(f"Memory at the end of processing: {psutil.Process().memory_info().rss / (1024*1024)}MB")
 
         except RuntimeError as re:
             log.exception("The file is malformed.", re)
@@ -121,25 +138,20 @@ async def validate_and_update_submission(
             await update_submission(session, submission)
 
 
-def build_validation_results(findings: pl.DataFrame, phase: ValidationPhase):
-    val_json = df_to_dicts(findings, settings.max_json_records, settings.max_json_group_size)
-    if phase == ValidationPhase.SYNTACTICAL:
-        findings_count = findings.filter(
-            pl.col("validation_type") == Severity.ERROR, pl.col("scope") == "single-field"
-        ).height
+def build_validation_results(final_df: pl.DataFrame, results: list[ValidationResults], final_phase: ValidationPhase):
+    val_json = df_to_dicts(final_df, settings.max_json_records, settings.max_json_group_size)
+    if final_phase == ValidationPhase.SYNTACTICAL:
+        syntax_error_counts=sum([r.error_counts.single_field_count for r in results])
         val_res = {
             "syntax_errors": {
-                "single_field_count": findings_count,
+                "single_field_count": syntax_error_counts,
                 "multi_field_count": 0,  # this will always be zero for syntax errors
                 "register_count": 0,  # this will always be zero for syntax errors
-                "total_count": findings_count,
+                "total_count": syntax_error_counts,
                 "details": val_json,
             }
         }
     else:
-        # The findings dataframe might not have any columns if there were no findings/check violations
-        # so build out the json structure as empty results first, then populate values if there is at least
-        # one finding
         errors_list = [e for e in val_json if e["validation"]["severity"] == Severity.ERROR]
         warnings_list = [w for w in val_json if w["validation"]["severity"] == Severity.WARNING]
         val_res = {
@@ -151,48 +163,19 @@ def build_validation_results(findings: pl.DataFrame, phase: ValidationPhase):
                 "details": [],
             },
             "logic_errors": {
-                "single_field_count": 0,
-                "multi_field_count": 0,
-                "register_count": 0,
-                "total_count": 0,
-                "details": [],
+                "single_field_count": sum([r.error_counts.single_field_count for r in results]),
+                "multi_field_count": sum([r.error_counts.multi_field_count for r in results]),
+                "register_count": sum([r.error_counts.register_count for r in results]),
+                "total_count": sum([r.error_counts.total_count for r in results]),
+                "details": errors_list,
             },
             "logic_warnings": {
-                "single_field_count": 0,
-                "multi_field_count": 0,
-                "register_count": 0,
-                "total_count": 0,
-                "details": [],
+                "single_field_count": sum([r.warning_counts.single_field_count for r in results]),
+                "multi_field_count": sum([r.warning_counts.multi_field_count for r in results]),
+                "register_count": sum([r.warning_counts.register_count for r in results]),
+                "total_count": sum([r.warning_counts.total_count for r in results]),
+                "details": warnings_list,
             },
         }
-
-        if not findings.is_empty():
-            val_res["logic_errors"]["single_field_count"] = findings.filter(
-                pl.col("validation_type") == Severity.ERROR, pl.col("scope") == "single-field"
-            ).height
-            val_res["logic_errors"]["multi_field_count"] = findings.filter(
-                pl.col("validation_type") == Severity.ERROR, pl.col("scope") == "multi-field"
-            ).height
-            val_res["logic_errors"]["register_count"] = findings.filter(
-                pl.col("validation_type") == Severity.ERROR, pl.col("scope") == "register"
-            ).height
-            val_res["logic_errors"]["total_count"] = (
-                findings.filter(pl.col("validation_type") == Severity.ERROR).height,
-            )
-            val_res["logic_errors"]["details"] = errors_list
-
-            val_res["logic_warnings"]["single_field_count"] = findings.filter(
-                pl.col("validation_type") == Severity.WARNING, pl.col("scope") == "single-field"
-            ).height
-            val_res["logic_warnings"]["multi_field_count"] = findings.filter(
-                pl.col("validation_type") == Severity.WARNING, pl.col("scope") == "multi-field"
-            ).height
-            val_res["logic_warnings"]["register_count"] = findings.filter(
-                pl.col("validation_type") == Severity.WARNING, pl.col("scope") == "register"
-            ).height
-            val_res["logic_warnings"]["total_count"] = (
-                findings.filter(pl.col("validation_type") == Severity.WARNING).height,
-            )
-            val_res["logic_warnings"]["details"] = warnings_list
 
     return val_res
