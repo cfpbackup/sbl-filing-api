@@ -1,15 +1,17 @@
-import asyncio
+# import asyncio
 import logging
 
 from concurrent.futures import ProcessPoolExecutor
 from fastapi import Depends, Request, UploadFile, status
 from fastapi.responses import Response, StreamingResponse
-from multiprocessing import Manager
+
+# from multiprocessing import Manager
 from regtech_api_commons.api.router_wrapper import Router
 from regtech_api_commons.api.exceptions import RegTechHttpException
 from sbl_filing_api.entities.models.model_enums import UserActionType
 from sbl_filing_api.services import submission_processor
-from sbl_filing_api.services.multithread_handler import handle_submission
+
+# from sbl_filing_api.services.multithread_handler import handle_submission
 from typing import Annotated, List
 
 from sbl_filing_api.entities.engine.engine import get_session
@@ -180,10 +182,10 @@ async def upload_file(request: Request, lei: str, period_code: str, file: Upload
                 detail=f"Error while trying to process Submission {submission.id}",
             ) from e
 
-        exec_check = Manager().dict()
-        exec_check["continue"] = True
-        loop = asyncio.get_event_loop()
-        loop.run_in_executor(executor, handle_submission, period_code, lei, submission, content, exec_check)
+        # exec_check = Manager().dict()
+        # exec_check["continue"] = True
+        # loop = asyncio.get_event_loop()
+        # loop.run_in_executor(executor, handle_submission, period_code, lei, submission, content, exec_check)
 
         return submission
 
@@ -225,9 +227,9 @@ async def get_submission_latest(request: Request, lei: str, period_code: str):
             name="Filing Not Found",
             detail=f"There is no Filing for LEI {lei} in period {period_code}, unable to get latest submission for it.",
         )
-    result = await repo.get_latest_submission(request.state.db_session, lei, period_code)
-    if result:
-        return result
+    submission = await repo.get_latest_submission(request.state.db_session, lei, period_code)
+    if submission:
+        return submission
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

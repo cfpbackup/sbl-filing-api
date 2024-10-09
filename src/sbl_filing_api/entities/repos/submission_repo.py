@@ -24,6 +24,9 @@ from sbl_filing_api.entities.models.dao import (
 from sbl_filing_api.entities.models.dto import FilingPeriodDTO, FilingDTO, ContactInfoDTO
 from sbl_filing_api.entities.models.model_enums import SubmissionState
 
+# from regtech_data_validator.model import FindingDAO
+# from regtech_data_validator.checks import Severity
+
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
@@ -31,6 +34,36 @@ T = TypeVar("T")
 
 class NoFilingPeriodException(Exception):
     pass
+
+
+"""
+async def get_validation_phase(session: AsyncSession, submission_id: int):
+    phase = await session.execute(
+        select(FindingDAO.phase).filter(FindingDAO.submission_id==submission_id)
+    )
+    return phase.scalar()
+
+async def get_field_counts(session: AsyncSession, submission_id: int, severity: Severity, scope: str = None):
+    query = session.query(func.count(Finding.id)).filter(
+        FindingDAO.submission_id == submission_id,
+        FindingDAO.validation_type == severity,
+    )
+    if scope:
+        query.filter(FindingDAO.scope == scope)
+
+    return await session.scalar(query)
+
+
+async def get_findings(session, submission_id, max_group_size):
+    row_number = func.row_number().over(
+        partition_by=FindingDAO.validation_id
+    ).label('row_num')
+
+    subquery = select(FindingDAO, row_num).filter(FindingDAO.submission_id == submission_id).subquery()
+    query = select(subquery).filter(row_num <= max_group_size)
+    results = await session.execute(query)
+    return results.fetchall()
+"""
 
 
 async def get_submissions(session: AsyncSession, lei: str = None, filing_period: str = None) -> List[SubmissionDAO]:
