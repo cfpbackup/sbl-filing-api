@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_835b829a91806ca6_dto_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.6.4">coverage.py v7.6.4</a>,
-            created at 2024-10-22 14:25 +0000
+            created at 2024-10-22 14:37 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -197,7 +197,7 @@
     <p class="run"><span class="n"><a id="t113" href="#t113">113</a></span><span class="t">    <span class="nam">institution_snapshot_id</span><span class="op">:</span> <span class="nam">Mapped</span><span class="op">[</span><span class="nam">str</span><span class="op">]</span> <span class="op">=</span> <span class="nam">mapped_column</span><span class="op">(</span><span class="nam">nullable</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t114" href="#t114">114</a></span><span class="t">    <span class="nam">contact_info</span><span class="op">:</span> <span class="nam">Mapped</span><span class="op">[</span><span class="nam">ContactInfoDAO</span><span class="op">]</span> <span class="op">=</span> <span class="nam">relationship</span><span class="op">(</span><span class="str">"ContactInfoDAO"</span><span class="op">,</span> <span class="nam">lazy</span><span class="op">=</span><span class="str">"joined"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t115" href="#t115">115</a></span><span class="t">    <span class="nam">signatures</span><span class="op">:</span> <span class="nam">Mapped</span><span class="op">[</span><span class="nam">List</span><span class="op">[</span><span class="nam">UserActionDAO</span><span class="op">]</span> <span class="op">|</span> <span class="key">None</span><span class="op">]</span> <span class="op">=</span> <span class="nam">relationship</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t116" href="#t116">116</a></span><span class="t">        <span class="str">"UserActionDAO"</span><span class="op">,</span> <span class="nam">secondary</span><span class="op">=</span><span class="str">"filing_signature"</span><span class="op">,</span> <span class="nam">lazy</span><span class="op">=</span><span class="str">"selectin"</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t116" href="#t116">116</a></span><span class="t">        <span class="str">"UserActionDAO"</span><span class="op">,</span> <span class="nam">secondary</span><span class="op">=</span><span class="str">"filing_signature"</span><span class="op">,</span> <span class="nam">lazy</span><span class="op">=</span><span class="str">"selectin"</span><span class="op">,</span> <span class="nam">order_by</span><span class="op">=</span><span class="str">"desc(UserActionDAO.timestamp)"</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t117" href="#t117">117</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t118" href="#t118">118</a></span><span class="t">    <span class="nam">confirmation_id</span><span class="op">:</span> <span class="nam">Mapped</span><span class="op">[</span><span class="nam">str</span><span class="op">]</span> <span class="op">=</span> <span class="nam">mapped_column</span><span class="op">(</span><span class="nam">nullable</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t119" href="#t119">119</a></span><span class="t">    <span class="nam">creator_id</span><span class="op">:</span> <span class="nam">Mapped</span><span class="op">[</span><span class="nam">int</span><span class="op">]</span> <span class="op">=</span> <span class="nam">mapped_column</span><span class="op">(</span><span class="nam">ForeignKey</span><span class="op">(</span><span class="str">"user_action.id"</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -238,7 +238,7 @@
             <a class="nav" href="z_835b829a91806ca6_dto_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.6.4">coverage.py v7.6.4</a>,
-            created at 2024-10-22 14:25 +0000
+            created at 2024-10-22 14:37 +0000
         </p>
     </div>
 </footer>
