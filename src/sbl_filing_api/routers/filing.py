@@ -152,7 +152,7 @@ async def sign_filing(request: Request, lei: str, period_code: str):
         ),
     )
     filing.confirmation_id = (
-        lei + "-" + period_code + "-" + str(latest_sub.id) + "-" + str(int(sig.timestamp.timestamp()))
+        lei + "-" + period_code + "-" + str(latest_sub.counter) + "-" + str(int(sig.timestamp.timestamp()))
     )
     filing.signatures.append(sig)
     return await repo.upsert_filing(request.state.db_session, filing)
@@ -185,7 +185,7 @@ async def upload_file(request: Request, lei: str, period_code: str, file: Upload
         submission = await repo.add_submission(request.state.db_session, filing.id, file.filename, submitter.id)
         try:
             submission_processor.upload_to_storage(
-                period_code, lei, submission.id, content, file.filename.split(".")[-1]
+                period_code, lei, submission.counter, content, file.filename.split(".")[-1]
             )
 
             submission.state = SubmissionState.SUBMISSION_UPLOADED

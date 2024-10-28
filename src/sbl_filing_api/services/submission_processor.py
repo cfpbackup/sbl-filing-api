@@ -64,10 +64,12 @@ async def validate_and_update_submission(
 ):
     async with SessionLocal() as session:
         try:
+            print(f"Submission incoming: {submission}")
             validator_version = imeta.version("regtech-data-validator")
             submission.validation_ruleset_version = validator_version
             submission.state = SubmissionState.VALIDATION_IN_PROGRESS
             submission = await update_submission(session, submission)
+            print(f"Submission outcoming: {submission}")
 
             df = pd.read_csv(BytesIO(content), dtype=str, na_filter=False)
             submission.total_records = len(df)
@@ -94,7 +96,7 @@ async def validate_and_update_submission(
                 max_errors=settings.max_validation_errors,
             )
             upload_to_storage(
-                period_code, lei, str(submission.id) + REPORT_QUALIFIER, submission_report.encode("utf-8")
+                period_code, lei, str(submission.counter) + REPORT_QUALIFIER, submission_report.encode("utf-8")
             )
 
             if not exec_check["continue"]:

@@ -989,6 +989,7 @@ class TestFilingApi:
         mock = mocker.patch("sbl_filing_api.entities.repos.submission_repo.get_latest_submission")
         mock.return_value = SubmissionDAO(
             id=1,
+            counter=5,
             submitter=UserActionDAO(
                 id=1,
                 user_id="123456-7890-ABCDEF-GHIJ",
@@ -1029,7 +1030,7 @@ class TestFilingApi:
                 action_type=UserActionType.SIGN,
             ),
         )
-        assert upsert_mock.call_args.args[1].confirmation_id.startswith("1234567890ABCDEFGH00-2024-1-")
+        assert upsert_mock.call_args.args[1].confirmation_id.startswith("1234567890ABCDEFGH00-2024-5-")
         assert res.status_code == 200
         assert float(upsert_mock.call_args.args[1].confirmation_id.split("-")[3]) == pytest.approx(
             int(dt.now().timestamp()), abs=1.5
