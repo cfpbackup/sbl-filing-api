@@ -18,6 +18,7 @@ class SubmissionDTO(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int | None = None
+    counter: int
     state: SubmissionState | None = None
     validation_ruleset_version: str | None = None
     validation_results: Dict[str, Any] | None = None

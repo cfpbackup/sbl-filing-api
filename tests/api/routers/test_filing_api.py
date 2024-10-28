@@ -160,6 +160,7 @@ class TestFilingApi:
         mock.return_value = [
             SubmissionDAO(
                 filing=1,
+                counter=1,
                 state=SubmissionState.SUBMISSION_UPLOADED,
                 validation_ruleset_version="v1",
                 submission_time=datetime.datetime.now(),
@@ -208,6 +209,7 @@ class TestFilingApi:
         mock = mocker.patch("sbl_filing_api.entities.repos.submission_repo.get_latest_submission")
         mock.return_value = SubmissionDAO(
             filing=1,
+            counter=1,
             state=SubmissionState.VALIDATION_IN_PROGRESS,
             validation_ruleset_version="v1",
             submission_time=datetime.datetime.now(),
@@ -254,6 +256,7 @@ class TestFilingApi:
         mock.return_value = SubmissionDAO(
             id=1,
             filing=1,
+            counter=1,
             state=SubmissionState.VALIDATION_WITH_ERRORS,
             validation_ruleset_version="v1",
             submission_time=datetime.datetime.now(),
@@ -293,6 +296,7 @@ class TestFilingApi:
         return_sub = SubmissionDAO(
             id=1,
             filing=1,
+            counter=1,
             state=SubmissionState.SUBMISSION_UPLOADED,
             filename="submission.csv",
             submitter_id=1,
@@ -384,6 +388,7 @@ class TestFilingApi:
         return_sub = SubmissionDAO(
             id=1,
             filing=1,
+            counter=1,
             state=SubmissionState.SUBMISSION_UPLOADED,
             filename="submission.csv",
         )
@@ -440,6 +445,7 @@ class TestFilingApi:
         return_sub = SubmissionDAO(
             id=1,
             filing=1,
+            counter=1,
             state=SubmissionState.SUBMISSION_UPLOADED,
             filename="submission.csv",
         )
@@ -915,6 +921,7 @@ class TestFilingApi:
         mock.return_value = SubmissionDAO(
             id=1,
             filing=1,
+            counter=1,
             state=SubmissionState.VALIDATION_WITH_ERRORS,
             validation_ruleset_version="v1",
             submission_time=datetime.datetime.now(),
@@ -930,6 +937,7 @@ class TestFilingApi:
         update_mock.return_value = SubmissionDAO(
             id=1,
             filing=1,
+            counter=2,
             state=SubmissionState.SUBMISSION_ACCEPTED,
             validation_ruleset_version="v1",
             submission_time=datetime.datetime.now(),
@@ -1024,7 +1032,7 @@ class TestFilingApi:
         assert upsert_mock.call_args.args[1].confirmation_id.startswith("1234567890ABCDEFGH00-2024-1-")
         assert res.status_code == 200
         assert float(upsert_mock.call_args.args[1].confirmation_id.split("-")[3]) == pytest.approx(
-            dt.now().timestamp(), abs=1.5
+            int(dt.now().timestamp()), abs=1.5
         )
 
     async def test_errors_sign_filing(

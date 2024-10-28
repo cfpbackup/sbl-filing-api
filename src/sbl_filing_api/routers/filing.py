@@ -151,7 +151,9 @@ async def sign_filing(request: Request, lei: str, period_code: str):
             action_type=UserActionType.SIGN,
         ),
     )
-    filing.confirmation_id = lei + "-" + period_code + "-" + str(latest_sub.id) + "-" + str(sig.timestamp.timestamp())
+    filing.confirmation_id = (
+        lei + "-" + period_code + "-" + str(latest_sub.id) + "-" + str(int(sig.timestamp.timestamp()))
+    )
     filing.signatures.append(sig)
     return await repo.upsert_filing(request.state.db_session, filing)
 
