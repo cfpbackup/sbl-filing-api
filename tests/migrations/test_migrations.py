@@ -453,5 +453,4 @@ def test_migrations_to_6ec12afa5b37(alembic_runner: MigrationContext, alembic_en
 
     assert "counter" in set([c["name"] for c in inspector.get_columns("submission")])
     assert counter_constraint["name"] == "unique_filing_counter"
-    print(f"{counter_constraint["column_names"]}")
     assert set(counter_constraint["column_names"]) == set(["filing", "counter"])
