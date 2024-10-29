@@ -15,9 +15,9 @@ class Base(AsyncAttrs, DeclarativeBase):
 class UserActionDAO(Base):
     __tablename__ = "user_action"
     id: Mapped[int] = mapped_column(index=True, primary_key=True, autoincrement=True)
-    user_id: Mapped[str]
-    user_name: Mapped[str]
-    user_email: Mapped[str]
+    user_id: Mapped[str] = mapped_column(String(36))
+    user_name: Mapped[str] = mapped_column(String(255))
+    user_email: Mapped[str] = mapped_column(String(255))
     action_type: Mapped[UserActionType] = mapped_column(SAEnum(UserActionType))
     timestamp: Mapped[datetime] = mapped_column(server_default=func.now())
 
@@ -79,18 +79,18 @@ class ContactInfoDAO(Base):
     __tablename__ = "contact_info"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     filing: Mapped[int] = mapped_column(ForeignKey("filing.id"))
-    first_name: Mapped[str]
-    last_name: Mapped[str]
-    hq_address_street_1: Mapped[str]
-    hq_address_street_2: Mapped[str] = mapped_column(nullable=True)
-    hq_address_street_3: Mapped[str] = mapped_column(nullable=True)
-    hq_address_street_4: Mapped[str] = mapped_column(nullable=True)
-    hq_address_city: Mapped[str]
-    hq_address_state: Mapped[str]
+    first_name: Mapped[str] = mapped_column(String(255))
+    last_name: Mapped[str] = mapped_column(String(255))
+    hq_address_street_1: Mapped[str] = mapped_column(String(255))
+    hq_address_street_2: Mapped[str] = mapped_column(String(255), nullable=True)
+    hq_address_street_3: Mapped[str] = mapped_column(String(255), nullable=True)
+    hq_address_street_4: Mapped[str] = mapped_column(String(255), nullable=True)
+    hq_address_city: Mapped[str] = mapped_column(String(255))
+    hq_address_state: Mapped[str] = mapped_column(String(255))
     hq_address_zip: Mapped[str] = mapped_column(String(5))
-    email: Mapped[str]
-    phone_number: Mapped[str]
-    phone_ext: Mapped[str] = mapped_column(String(254), nullable=True)
+    email: Mapped[str] = mapped_column(String(255))
+    phone_number: Mapped[str] = mapped_column(String(255))
+    phone_ext: Mapped[str] = mapped_column(String(255), nullable=True)
 
     def __str__(self):
         return f"ContactInfo ID: {self.id}, First Name: {self.first_name}, Last Name: {self.last_name}, Address Street 1: {self.hq_address_street_1}, Address Street 2: {self.hq_address_street_2}, Address City: {self.hq_address_city}, Address State: {self.hq_address_state}, Address Zip: {self.hq_address_zip}"
@@ -113,11 +113,12 @@ class FilingDAO(Base):
     institution_snapshot_id: Mapped[str] = mapped_column(nullable=True)
     contact_info: Mapped[ContactInfoDAO] = relationship("ContactInfoDAO", lazy="joined")
     signatures: Mapped[List[UserActionDAO] | None] = relationship(
-        "UserActionDAO", secondary="filing_signature", lazy="selectin"
+        "UserActionDAO", secondary="filing_signature", lazy="selectin", order_by="desc(UserActionDAO.timestamp)"
     )
     confirmation_id: Mapped[str] = mapped_column(nullable=True)
     creator_id: Mapped[int] = mapped_column(ForeignKey("user_action.id"))
     creator: Mapped[UserActionDAO] = relationship(lazy="selectin", foreign_keys=[creator_id])
+    is_voluntary: Mapped[bool] = mapped_column(default=False)
 
     def __str__(self):
         return f"ID: {self.id}, Filing Period: {self.filing_period}, LEI: {self.lei}, Tasks: {self.tasks}, Institution Snapshot ID: {self.institution_snapshot_id}, Contact Info: {self.contact_info}"
