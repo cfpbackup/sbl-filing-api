@@ -102,13 +102,15 @@ async def validate_and_update_submission(
             else:
                 submission.state = SubmissionState.VALIDATION_WITH_WARNINGS
 
-            report_path = generate_file_path(period_code, lei, f"{submission.id}_report")
+            submission_report = df_to_download(
+                final_df,
+                warning_count=sum([r.warning_counts.total_count for r in all_findings]),
+                error_count=sum([r.error_counts.total_count for r in all_findings]),
+                max_errors=settings.max_validation_errors,
+            )
 
-            df_to_download(final_df, report_path)
+            upload_to_storage(period_code, lei, str(submission.id) + REPORT_QUALIFIER, submission_report)
 
-            # upload_to_storage(
-            #    period_code, lei, str(submission.id) + REPORT_QUALIFIER, submission_report.encode("utf-8")
-            # )
             if not exec_check["continue"]:
                 log.warning(f"Submission {submission.id} is expired, will not be updating final state with results.")
                 return

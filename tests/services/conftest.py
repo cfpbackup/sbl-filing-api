@@ -91,4 +91,4 @@ def build_validation_results_mock(mocker: MockerFixture, validate_submission_moc
 @pytest.fixture(scope="function")
 def df_to_download_mock(mocker: MockerFixture):
     mock_download_formatting = mocker.patch("sbl_filing_api.services.submission_processor.df_to_download")
-    mock_download_formatting.return_value = None
+    mock_download_formatting.return_value = b"\x01"
