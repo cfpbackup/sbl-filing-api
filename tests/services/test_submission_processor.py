@@ -8,7 +8,7 @@ from unittest.mock import Mock
 from pytest_mock import MockerFixture
 from sbl_filing_api.config import settings
 from sbl_filing_api.entities.models.dao import SubmissionDAO, SubmissionState
-from regtech_data_validator.validation_results import ValidationPhase
+from regtech_data_validator.validation_results import ValidationPhase, ValidationResults, Counts
 from regtech_data_validator.checks import Severity
 from regtech_api_commons.api.exceptions import RegTechHttpException
 
@@ -133,7 +133,8 @@ class TestSubmissionProcessor:
             filename="submission.csv",
         )
 
-        mocker.patch("sbl_filing_api.services.submission_processor.build_validation_results")
+        mock_build_json = mocker.patch("sbl_filing_api.services.submission_processor.build_validation_results")
+        mock_build_json.return_value = {"logic_errors": {"total_count": 1}}
 
         await submission_processor.validate_and_update_submission(
             "2024", "123456790", mock_sub, None, {"continue": True}
@@ -224,6 +225,9 @@ class TestSubmissionProcessor:
             filename="submission.csv",
         )
 
+        mock_build_json = mocker.patch("sbl_filing_api.services.submission_processor.build_validation_results")
+        mock_build_json.return_value = {"logic_errors": {"total_count": 1}}
+
         await submission_processor.validate_and_update_submission(
             "2024", "123456790", mock_sub, None, {"continue": False}
         )
@@ -237,7 +241,7 @@ class TestSubmissionProcessor:
         df_to_dicts_mock = mocker.patch("sbl_filing_api.services.submission_processor.df_to_dicts")
         df_to_dicts_mock.return_value = []
 
-        validation_results = submission_processor.build_validation_results(pl.DataFrame(), ValidationPhase.LOGICAL)
+        validation_results = submission_processor.build_validation_results(pl.DataFrame(), [], ValidationPhase.LOGICAL)
         assert validation_results["syntax_errors"]["single_field_count"] == 0
         assert validation_results["syntax_errors"]["multi_field_count"] == 0
         assert validation_results["syntax_errors"]["register_count"] == 0
@@ -293,8 +297,17 @@ class TestSubmissionProcessor:
                 "scope": ["single-field", "single-field", "multi-field"],
             }
         )
+        result_counts = ValidationResults(
+            error_counts=Counts(single_field_count=2),
+            warning_counts=Counts(),
+            is_valid=False,
+            findings=findings,
+            phase=ValidationPhase.SYNTACTICAL,
+        )
 
-        validation_results = submission_processor.build_validation_results(findings, ValidationPhase.SYNTACTICAL)
+        validation_results = submission_processor.build_validation_results(
+            findings, [result_counts], ValidationPhase.SYNTACTICAL
+        )
         assert validation_results["syntax_errors"]["single_field_count"] == 2
         assert validation_results["syntax_errors"]["multi_field_count"] == 0
         assert validation_results["syntax_errors"]["register_count"] == 0
@@ -333,7 +346,17 @@ class TestSubmissionProcessor:
             }
         )
 
-        validation_results = submission_processor.build_validation_results(findings, ValidationPhase.LOGICAL)
+        result_counts = ValidationResults(
+            error_counts=Counts(register_count=2),
+            warning_counts=Counts(),
+            is_valid=False,
+            findings=findings,
+            phase=ValidationPhase.LOGICAL,
+        )
+
+        validation_results = submission_processor.build_validation_results(
+            findings, [result_counts], ValidationPhase.LOGICAL
+        )
         assert validation_results["logic_errors"]["single_field_count"] == 0
         assert validation_results["logic_errors"]["multi_field_count"] == 0
         assert validation_results["logic_errors"]["register_count"] == 2
@@ -363,7 +386,17 @@ class TestSubmissionProcessor:
 
         findings = pl.DataFrame({"validation_type": [Severity.WARNING], "scope": ["single-field"]})
 
-        validation_results = submission_processor.build_validation_results(findings, ValidationPhase.LOGICAL)
+        result_counts = ValidationResults(
+            error_counts=Counts(),
+            warning_counts=Counts(single_field_count=1),
+            is_valid=False,
+            findings=findings,
+            phase=ValidationPhase.LOGICAL,
+        )
+
+        validation_results = submission_processor.build_validation_results(
+            findings, [result_counts], ValidationPhase.LOGICAL
+        )
         assert validation_results["logic_warnings"]["single_field_count"] == 1
         assert validation_results["logic_warnings"]["multi_field_count"] == 0
         assert validation_results["logic_warnings"]["register_count"] == 0
@@ -420,7 +453,17 @@ class TestSubmissionProcessor:
             }
         )
 
-        validation_results = submission_processor.build_validation_results(findings, ValidationPhase.LOGICAL)
+        result_counts = ValidationResults(
+            error_counts=Counts(register_count=2),
+            warning_counts=Counts(single_field_count=1),
+            is_valid=False,
+            findings=findings,
+            phase=ValidationPhase.LOGICAL,
+        )
+
+        validation_results = submission_processor.build_validation_results(
+            findings, [result_counts], ValidationPhase.LOGICAL
+        )
         assert validation_results["logic_warnings"]["single_field_count"] == 1
         assert validation_results["logic_warnings"]["multi_field_count"] == 0
         assert validation_results["logic_warnings"]["register_count"] == 0

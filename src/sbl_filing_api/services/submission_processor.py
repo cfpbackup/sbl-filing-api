@@ -2,7 +2,7 @@ from typing import Generator
 import polars as pl
 import importlib.metadata as imeta
 import logging
-import psutil
+
 from fastapi import UploadFile
 from regtech_data_validator.validator import validate_batch_csv
 from regtech_data_validator.data_formatters import df_to_dicts, df_to_download
@@ -70,31 +70,25 @@ async def validate_and_update_submission(
 ):
     async with SessionLocal() as session:
         try:
-            from datetime import datetime
-            start = datetime.now()
             validator_version = imeta.version("regtech-data-validator")
             submission.validation_ruleset_version = validator_version
             submission.state = SubmissionState.VALIDATION_IN_PROGRESS
             submission = await update_submission(session, submission)
 
-
-            v_start = datetime.now()
             file_path = generate_file_path(period_code, lei, submission.id)
-            
-            total_errors = 0
+
             final_phase = ValidationPhase.LOGICAL
             all_findings = []
             final_df = pl.DataFrame()
 
-
-            for validation_results in validate_batch_csv(file_path, context={"lei": lei}, batch_size=50000, batch_count=1):
+            for validation_results in validate_batch_csv(
+                file_path, context={"lei": lei}, batch_size=50000, batch_count=1
+            ):
                 final_phase = validation_results.phase
                 all_findings.append(validation_results)
 
-
             if all_findings:
                 final_df = pl.concat([v.findings for v in all_findings], how="diagonal")
-
 
             submission.validation_results = build_validation_results(final_df, all_findings, final_phase)
 
@@ -109,23 +103,17 @@ async def validate_and_update_submission(
                 submission.state = SubmissionState.VALIDATION_WITH_WARNINGS
 
             report_path = generate_file_path(period_code, lei, f"{submission.id}_report")
-            log.info(f"Writing csv report to {report_path}")
-            w_start = datetime.now()
-            log.info(f"Memory before download: {psutil.Process().memory_info().rss / (1024*1024)}MB")
+
             df_to_download(final_df, report_path)
-            log.info(f"df_to_download Processing took {(datetime.now() - w_start).total_seconds()} seconds")
-            log.info(f"Memory after download: {psutil.Process().memory_info().rss / (1024*1024)}MB")
+
             # upload_to_storage(
             #    period_code, lei, str(submission.id) + REPORT_QUALIFIER, submission_report.encode("utf-8")
             # )
             if not exec_check["continue"]:
                 log.warning(f"Submission {submission.id} is expired, will not be updating final state with results.")
                 return
-            update_start = datetime.now()
+
             await update_submission(session, submission)
-            log.info(f"db update Processing took {(datetime.now() - update_start).total_seconds()} seconds")
-            log.info(f"Processing took {(datetime.now() - start).total_seconds()} seconds")
-            log.info(f"Memory at the end of processing: {psutil.Process().memory_info().rss / (1024*1024)}MB")
 
         except RuntimeError as re:
             log.exception("The file is malformed.", re)
@@ -141,7 +129,7 @@ async def validate_and_update_submission(
 def build_validation_results(final_df: pl.DataFrame, results: list[ValidationResults], final_phase: ValidationPhase):
     val_json = df_to_dicts(final_df, settings.max_json_records, settings.max_json_group_size)
     if final_phase == ValidationPhase.SYNTACTICAL:
-        syntax_error_counts=sum([r.error_counts.single_field_count for r in results])
+        syntax_error_counts = sum([r.error_counts.single_field_count for r in results])
         val_res = {
             "syntax_errors": {
                 "single_field_count": syntax_error_counts,

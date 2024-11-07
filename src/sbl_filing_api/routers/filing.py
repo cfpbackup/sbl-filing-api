@@ -9,6 +9,8 @@ from fastapi.responses import Response, StreamingResponse
 from multiprocessing import Manager
 from regtech_api_commons.api.router_wrapper import Router
 from regtech_api_commons.api.exceptions import RegTechHttpException
+from regtech_api_commons.models.auth import AuthenticatedUser
+
 from sbl_filing_api.entities.models.model_enums import UserActionType
 from sbl_filing_api.services import submission_processor
 from sbl_filing_api.services.multithread_handler import handle_submission
@@ -23,6 +25,8 @@ from sbl_filing_api.entities.models.dto import (
     StateUpdateDTO,
     ContactInfoDTO,
     SubmissionState,
+    UserActionDTO,
+    VoluntaryUpdateDTO,
 )
 
 from sbl_filing_api.entities.repos import submission_repo as repo
@@ -60,6 +64,13 @@ async def get_filing(request: Request, response: Response, lei: str, period_code
     response.status_code = status.HTTP_204_NO_CONTENT
 
 
+@router.get("/periods/{period_code}/filings", response_model=List[FilingDTO])
+@requires("authenticated")
+async def get_filings(request: Request, period_code: str):
+    user: AuthenticatedUser = request.user
+    return await repo.get_filings(request.state.db_session, user.institutions, period_code)
+
+
 @router.post("/institutions/{lei}/filings/{period_code}", response_model=FilingDTO)
 @requires("authenticated")
 async def post_filing(request: Request, lei: str, period_code: str):
@@ -70,10 +81,12 @@ async def post_filing(request: Request, lei: str, period_code: str):
         try:
             creator = await repo.add_user_action(
                 request.state.db_session,
-                user_id=request.user.id,
-                user_name=request.user.name,
-                user_email=request.user.email,
-                action_type=UserActionType.CREATE,
+                UserActionDTO(
+                    user_id=request.user.id,
+                    user_name=request.user.name,
+                    user_email=request.user.email,
+                    action_type=UserActionType.CREATE,
+                ),
             )
         except Exception:
             logger.exception("Error while trying to create the filing.creator UserAction.")
@@ -117,6 +130,12 @@ async def sign_filing(request: Request, lei: str, period_code: str):
             name="Filing Action Forbidden",
             detail=f"Cannot sign filing. Filing for {lei} for period {period_code} does not have a latest submission the SUBMISSION_ACCEPTED state.",
         )
+    if filing.is_voluntary is None:
+        raise RegTechHttpException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            name="Filing Action Forbidden",
+            detail=f"Cannot sign filing. Filing for {lei} for period {period_code} does not have a selection of is_voluntary defined.",
+        )
     if not filing.contact_info:
         raise RegTechHttpException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -133,10 +152,12 @@ async def sign_filing(request: Request, lei: str, period_code: str):
 
     sig = await repo.add_user_action(
         request.state.db_session,
-        user_id=request.user.id,
-        user_name=request.user.name,
-        user_email=request.user.email,
-        action_type=UserActionType.SIGN,
+        UserActionDTO(
+            user_id=request.user.id,
+            user_name=request.user.name,
+            user_email=request.user.email,
+            action_type=UserActionType.SIGN,
+        ),
     )
     filing.confirmation_id = lei + "-" + period_code + "-" + str(latest_sub.id) + "-" + str(sig.timestamp.timestamp())
     filing.signatures.append(sig)
@@ -160,10 +181,12 @@ async def upload_file(request: Request, lei: str, period_code: str, file: Upload
     try:
         submitter = await repo.add_user_action(
             request.state.db_session,
-            user_id=request.user.id,
-            user_name=request.user.name,
-            user_email=request.user.email,
-            action_type=UserActionType.SUBMIT,
+            UserActionDTO(
+                user_id=request.user.id,
+                user_name=request.user.name,
+                user_email=request.user.email,
+                action_type=UserActionType.SUBMIT,
+            ),
         )
         submission = await repo.add_submission(request.state.db_session, filing.id, file.filename, submitter.id)
         try:
@@ -267,10 +290,12 @@ async def accept_submission(request: Request, id: int, lei: str, period_code: st
 
     accepter = await repo.add_user_action(
         request.state.db_session,
-        user_id=request.user.id,
-        user_name=request.user.name,
-        user_email=request.user.email,
-        action_type=UserActionType.ACCEPT,
+        UserActionDTO(
+            user_id=request.user.id,
+            user_name=request.user.name,
+            user_email=request.user.email,
+            action_type=UserActionType.ACCEPT,
+        ),
     )
 
     submission.accepter_id = accepter.id
@@ -390,3 +415,18 @@ async def get_submission_report(request: Request, response: Response, lei: str, 
             name="Report Not Found",
             detail=f"Report for ({id}) does not exist.",
         )
+
+
+@router.put("/institutions/{lei}/filings/{period_code}/is-voluntary", response_model=FilingDTO)
+@requires("authenticated")
+async def update_is_voluntary(request: Request, lei: str, period_code: str, update_value: VoluntaryUpdateDTO):
+    result = await repo.get_filing(request.state.db_session, lei, period_code)
+    if result:
+        result.is_voluntary = update_value.is_voluntary
+        res = await repo.upsert_filing(request.state.db_session, result)
+        return res
+    raise RegTechHttpException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        name="Filing Not Found",
+        detail=f"A Filing for the LEI ({lei}) and period ({period_code}) that was attempted to be updated does not exist.",
+    )

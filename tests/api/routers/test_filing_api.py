@@ -20,7 +20,7 @@ from sbl_filing_api.entities.models.dao import (
     FilingDAO,
     UserActionDAO,
 )
-from sbl_filing_api.entities.models.dto import ContactInfoDTO
+from sbl_filing_api.entities.models.dto import ContactInfoDTO, UserActionDTO
 from sbl_filing_api.entities.models.model_enums import UserActionType
 from sbl_filing_api.services import submission_processor
 from sbl_filing_api.services.multithread_handler import handle_submission
@@ -62,6 +62,24 @@ class TestFilingApi:
         get_filing_mock.return_value = None
         res = client.get("/v1/filing/institutions/1234567890ABCDEFGH00/filings/2024/")
         assert res.status_code == 204
+
+    def test_unauthed_get_filings(self, app_fixture: FastAPI, get_filing_mock: Mock):
+        client = TestClient(app_fixture)
+        res = client.get("/v1/filing/periods/2024/filings")
+        assert res.status_code == 403
+
+    def test_get_filings(self, app_fixture: FastAPI, get_filings_mock: Mock, authed_user_mock: Mock):
+        client = TestClient(app_fixture)
+        res = client.get("/v1/filing/periods/2024/filings")
+        leis = ["1234567890ABCDEFGH00", "1234567890ABCDEFGH01", "1234567890ZXWVUTSR00"]
+        get_filings_mock.assert_called_with(ANY, leis, "2024")
+        assert res.status_code == 200
+        for i in range(len(res.json())):
+            assert res.json()[i]["lei"] == leis[i]
+
+        get_filings_mock.return_value = []
+        res = client.get("/v1/filing/periods/2024/filings")
+        assert res.json() == []
 
     def test_unauthed_post_filing(self, app_fixture: FastAPI):
         client = TestClient(app_fixture)
@@ -527,6 +545,15 @@ class TestFilingApi:
         assert res.status_code == 200
         assert res.json()["institution_snapshot_id"] == "v3"
 
+        # update is_voluntary
+        mock.return_value.is_voluntary = True
+        res = client.put(
+            "/v1/filing/institutions/1234567890ABCDEFGH00/filings/2025/is-voluntary",
+            json={"is_voluntary": True},
+        )
+        assert res.status_code == 200
+        assert res.json()["is_voluntary"] is True
+
         # no existing filing for contact_info
         get_filing_mock.return_value = None
         res = client.put(
@@ -674,6 +701,100 @@ class TestFilingApi:
                 hq_address_state="TS",
                 hq_address_zip="12345",
                 phone_number="112-345-6789",
+                phone_ext="x54321",
+                email="name_1@email.test",
+            ),
+            creator_id=1,
+            creator=UserActionDAO(
+                id=1,
+                user_id="123456-7890-ABCDEF-GHIJ",
+                user_name="test creator",
+                user_email="test@local.host",
+                action_type=UserActionType.CREATE,
+                timestamp=datetime.datetime.now(),
+            ),
+        )
+
+        client = TestClient(app_fixture)
+        contact_info_json = {
+            "id": 1,
+            "filing": 1,
+            "first_name": "test_first_name_1",
+            "last_name": "test_last_name_1",
+            "hq_address_street_1": "address street 1",
+            "hq_address_street_2": "",
+            "hq_address_city": "Test City 1",
+            "hq_address_state": "TS",
+            "hq_address_zip": "12345",
+            "phone_number": "112-345-6789",
+            "email": "name_1@email.test",
+            "phone_ext": "x54321",
+        }
+
+        res = client.put(
+            "/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/contact-info", json=contact_info_json
+        )
+
+        assert res.status_code == 200
+
+        result = res.json()
+        assert result["id"] == 1
+        assert result["lei"] == "1234567890ZXWVUTSR00"
+        assert result["institution_snapshot_id"] == "Snapshot-1"
+        assert result["filing_period"] == "2024"
+        assert result["contact_info"]["id"] == 1
+        assert result["contact_info"]["first_name"] == "test_first_name_1"
+        assert result["contact_info"]["last_name"] == "test_last_name_1"
+        assert result["contact_info"]["hq_address_street_1"] == "address street 1"
+        assert result["contact_info"]["hq_address_street_2"] == ""
+        assert result["contact_info"]["hq_address_city"] == "Test City 1"
+        assert result["contact_info"]["hq_address_state"] == "TS"
+        assert result["contact_info"]["hq_address_zip"] == "12345"
+        assert result["contact_info"]["phone_number"] == "112-345-6789"
+        assert result["contact_info"]["phone_ext"] == "x54321"
+        assert result["contact_info"]["email"] == "name_1@email.test"
+
+        mock.assert_called_with(
+            ANY,
+            "1234567890ZXWVUTSR00",
+            "2024",
+            ContactInfoDTO(
+                id=1,
+                first_name="test_first_name_1",
+                last_name="test_last_name_1",
+                hq_address_street_1="address street 1",
+                hq_address_street_2="",
+                hq_address_city="Test City 1",
+                hq_address_state="TS",
+                hq_address_zip="12345",
+                email="name_1@email.test",
+                phone_number="112-345-6789",
+                phone_ext="x54321",
+            ),
+        )
+
+    def test_no_extension(
+        self, mocker: MockerFixture, app_fixture: FastAPI, authed_user_mock: Mock, get_filing_mock: Mock
+    ):
+        get_filing_mock.return_value
+
+        mock = mocker.patch("sbl_filing_api.entities.repos.submission_repo.update_contact_info")
+        mock.return_value = FilingDAO(
+            id=1,
+            lei="1234567890ZXWVUTSR00",
+            institution_snapshot_id="Snapshot-1",
+            filing_period="2024",
+            contact_info=ContactInfoDAO(
+                id=1,
+                filing=1,
+                first_name="test_first_name_1",
+                last_name="test_last_name_1",
+                hq_address_street_1="address street 1",
+                hq_address_street_2="",
+                hq_address_city="Test City 1",
+                hq_address_state="TS",
+                hq_address_zip="12345",
+                phone_number="112-345-6789",
                 email="name_1@email.test",
             ),
             creator_id=1,
@@ -742,6 +863,34 @@ class TestFilingApi:
             ),
         )
 
+    def test_bad_extension(
+        self, mocker: MockerFixture, app_fixture: FastAPI, authed_user_mock: Mock, get_filing_mock: Mock
+    ):
+
+        client = TestClient(app_fixture)
+        contact_info_json = {
+            "id": 1,
+            "filing": 1,
+            "first_name": "test_first_name_1",
+            "last_name": "test_last_name_1",
+            "hq_address_street_1": "address street 1",
+            "hq_address_street_2": "",
+            "hq_address_city": "Test City 1",
+            "hq_address_state": "TS",
+            "hq_address_zip": "12345",
+            "phone_number": "112-345-6789",
+            "phone_ext": "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+            "email": "name_1@email.test",
+        }
+
+        res = client.put(
+            "/v1/filing/institutions/1234567890ZXWVUTSR00/filings/2024/contact-info", json=contact_info_json
+        )
+
+        assert res.status_code == 422
+        json_error = res.json()
+        assert "'String should have at most 255 characters'" in json_error["error_detail"]
+
     async def test_accept_submission(self, mocker: MockerFixture, app_fixture: FastAPI, authed_user_mock: Mock):
         user_action_submit = UserActionDAO(
             id=2,
@@ -802,10 +951,12 @@ class TestFilingApi:
         update_mock.assert_called_once()
         update_accepter_mock.assert_called_once_with(
             ANY,
-            user_id="123456-7890-ABCDEF-GHIJ",
-            user_name="Test User",
-            user_email="test@local.host",
-            action_type=UserActionType.ACCEPT,
+            UserActionDTO(
+                user_id="123456-7890-ABCDEF-GHIJ",
+                user_name="Test User",
+                user_email="test@local.host",
+                action_type=UserActionType.ACCEPT,
+            ),
         )
 
         assert res.json()["state"] == "SUBMISSION_ACCEPTED"
@@ -842,6 +993,7 @@ class TestFilingApi:
             submission_time=datetime.datetime.now(),
             filename="file1.csv",
         )
+        get_filing_mock.return_value.is_voluntary = False
 
         add_sig_mock = mocker.patch("sbl_filing_api.entities.repos.submission_repo.add_user_action")
         add_sig_mock.return_value = UserActionDAO(
@@ -861,10 +1013,12 @@ class TestFilingApi:
         res = client.put("/v1/filing/institutions/1234567890ABCDEFGH00/filings/2024/sign")
         add_sig_mock.assert_called_with(
             ANY,
-            user_id="123456-7890-ABCDEF-GHIJ",
-            user_name="Test User",
-            user_email="test@local.host",
-            action_type=UserActionType.SIGN,
+            UserActionDTO(
+                user_id="123456-7890-ABCDEF-GHIJ",
+                user_name="Test User",
+                user_email="test@local.host",
+                action_type=UserActionType.SIGN,
+            ),
         )
         assert upsert_mock.call_args.args[1].confirmation_id.startswith("1234567890ABCDEFGH00-2024-1-")
         assert res.status_code == 200
@@ -926,16 +1080,14 @@ class TestFilingApi:
             filename="file1.csv",
         )
 
-        """
-        get_filing_mock.return_value.institution_snapshot_id = None
         res = client.put("/v1/filing/institutions/1234567890ABCDEFGH00/filings/2024/sign")
         assert res.status_code == 403
         assert (
-            res.json()
-            == "Cannot sign filing. Filing for 1234567890ABCDEFGH00 for period 2024 does not have institution snapshot id defined."
+            res.json()["error_detail"]
+            == "Cannot sign filing. Filing for 1234567890ABCDEFGH00 for period 2024 does not have a selection of is_voluntary defined."
         )
-        """
 
+        get_filing_mock.return_value.is_voluntary = True
         get_filing_mock.return_value.contact_info = None
         res = client.put("/v1/filing/institutions/1234567890ABCDEFGH00/filings/2024/sign")
         assert res.status_code == 403

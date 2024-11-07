@@ -28,21 +28,18 @@ def validate_submission_mock(mocker: MockerFixture):
 def error_submission_mock(mocker: MockerFixture, validate_submission_mock: Mock):
 
     mock_read_csv = mocker.patch("sbl_filing_api.services.submission_processor.validate_batch_csv")
-    mock_read_csv.return_value = iter([(pl.DataFrame({"validation_type": [Severity.ERROR]}), ValidationPhase.LOGICAL)])
-
-    mock_validation = mocker.patch("sbl_filing_api.services.submission_processor.build_validation_results")
-    mock_validation.return_value = ValidationResults(
-        phase=ValidationPhase.SYNTACTICAL,
-        error_counts=Counts(
-            single_field_count=1,
-            multi_field_count=0,
-            register_count=0,
-            total_count=1,
-        ),
-        warning_counts=Counts(single_field_count=0, multi_field_count=0, register_count=0, total_count=0),
-        findings=pl.DataFrame({"validation_severity": [Severity.ERROR]}),
-        is_valid=False,
+    mock_read_csv.return_value = iter(
+        [
+            ValidationResults(
+                error_counts=Counts(),
+                warning_counts=Counts(),
+                is_valid=False,
+                findings=pl.DataFrame({"validation_type": [Severity.ERROR]}),
+                phase=ValidationPhase.LOGICAL,
+            )
+        ]
     )
+
     return validate_submission_mock
 
 
@@ -50,21 +47,18 @@ def error_submission_mock(mocker: MockerFixture, validate_submission_mock: Mock)
 def successful_submission_mock(mocker: MockerFixture, validate_submission_mock: Mock):
 
     mock_read_csv = mocker.patch("sbl_filing_api.services.submission_processor.validate_batch_csv")
-    mock_read_csv.return_value = iter(())
-
-    mock_validation = mocker.patch("sbl_filing_api.services.submission_processor.build_validation_results")
-    mock_validation.return_value = ValidationResults(
-        phase=ValidationPhase.LOGICAL,
-        error_counts=Counts(
-            single_field_count=0,
-            multi_field_count=0,
-            register_count=0,
-            total_count=0,
-        ),
-        warning_counts=Counts(single_field_count=0, multi_field_count=0, register_count=0, total_count=0),
-        findings=pl.DataFrame(),
-        is_valid=True,
+    mock_read_csv.return_value = iter(
+        [
+            ValidationResults(
+                error_counts=Counts(),
+                warning_counts=Counts(),
+                is_valid=True,
+                findings=pl.DataFrame(),
+                phase=ValidationPhase.LOGICAL,
+            )
+        ]
     )
+
     return validate_submission_mock
 
 
@@ -73,22 +67,17 @@ def warning_submission_mock(mocker: MockerFixture, validate_submission_mock: Moc
 
     mock_read_csv = mocker.patch("sbl_filing_api.services.submission_processor.validate_batch_csv")
     mock_read_csv.return_value = iter(
-        [(pl.DataFrame({"validation_type": [Severity.WARNING]}), ValidationPhase.LOGICAL)]
+        [
+            ValidationResults(
+                error_counts=Counts(),
+                warning_counts=Counts(),
+                is_valid=False,
+                findings=pl.DataFrame({"validation_type": [Severity.WARNING]}),
+                phase=ValidationPhase.LOGICAL,
+            )
+        ]
     )
 
-    mock_validation = mocker.patch("sbl_filing_api.services.submission_processor.build_validation_results")
-    mock_validation.return_value = ValidationResults(
-        phase=ValidationPhase.LOGICAL,
-        error_counts=Counts(
-            single_field_count=0,
-            multi_field_count=0,
-            register_count=0,
-            total_count=0,
-        ),
-        warning_counts=Counts(single_field_count=1, multi_field_count=0, register_count=0, total_count=1),
-        findings=pl.DataFrame({"validation_severity": Severity.WARNING}),
-        is_valid=False,
-    )
     return validate_submission_mock
 
 
