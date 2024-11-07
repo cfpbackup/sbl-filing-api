@@ -82,7 +82,11 @@ async def validate_and_update_submission(
             final_df = pl.DataFrame()
 
             for validation_results in validate_batch_csv(
-                file_path, context={"lei": lei}, batch_size=50000, batch_count=1
+                file_path,
+                context={"lei": lei},
+                batch_size=50000,
+                batch_count=1,
+                max_errors=settings.max_validation_errors,
             ):
                 final_phase = validation_results.phase
                 all_findings.append(validation_results)
