@@ -173,7 +173,7 @@ class TestSubmissionProcessor:
         )
 
         mock_update_submission.assert_called()
-        log_mock.exception.assert_called_with("The file is malformed.", re)
+        log_mock.exception.assert_called_with("The file is malformed.")
 
         assert mock_update_submission.mock_calls[0].args[1].state == SubmissionState.VALIDATION_IN_PROGRESS
         assert mock_update_submission.mock_calls[1].args[1].state == SubmissionState.SUBMISSION_UPLOAD_MALFORMED
@@ -186,7 +186,7 @@ class TestSubmissionProcessor:
         await submission_processor.validate_and_update_submission(
             "2024", "123456790", mock_sub, None, {"continue": True}
         )
-        log_mock.exception.assert_called_with("The file is malformed.", re)
+        log_mock.exception.assert_called_with("The file is malformed.")
         assert mock_update_submission.mock_calls[0].args[1].state == SubmissionState.VALIDATION_IN_PROGRESS
         assert mock_update_submission.mock_calls[1].args[1].state == SubmissionState.SUBMISSION_UPLOAD_MALFORMED
 
@@ -197,7 +197,7 @@ class TestSubmissionProcessor:
             "2024", "123456790", mock_sub, None, {"continue": True}
         )
         log_mock.exception.assert_called_with(
-            "Validation for submission %d did not complete due to an unexpected error.", mock_sub.id, e
+            "Validation for submission %d did not complete due to an unexpected error.", mock_sub.id
         )
 
     async def test_validation_expired(
