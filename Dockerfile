@@ -19,8 +19,7 @@ RUN chmod -R 447 /usr/app/upload
 WORKDIR /usr/app/src
 
 EXPOSE 8888
-#RUN groupadd --system sbl && useradd --system --create-home sbl -s /sbin/nologin -g sbl
 
-#USER sbl
+USER sbl
 
 CMD uvicorn sbl_filing_api.main:app --host 0.0.0.0 --port 8888 --log-config log-config.yml --log-level $UVICORN_LOG_LEVEL --timeout-keep-alive 65
