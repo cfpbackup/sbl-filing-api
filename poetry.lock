@@ -3381,6 +3381,7 @@ files = []
 develop = false
 
 [package.dependencies]
+cffi = ">=1.17.1"
 fastapi = "^0.115.5"
 pydantic-settings = "^2.4.0"
 python-jose = "^3.3.0"
@@ -3392,8 +3393,8 @@ uvicorn = "^0.32.0"
 [package.source]
 type = "git"
 url = "https://github.com/cfpb/regtech-api-commons.git"
-reference = "HEAD"
-resolved_reference = "f0ddbf59c3a8e44f749ea35cdefdadf21ea0509e"
+reference = "checkout_python_3.13"
+resolved_reference = "4c237e2f88195f93a2ebecc9f63e54cde70f7246"
 
 [[package]]
 name = "regtech-data-validator"
@@ -3420,7 +3421,7 @@ ujson = "^5.9.0"
 [package.source]
 type = "git"
 url = "https://github.com/cfpb/regtech-data-validator.git"
-reference = "HEAD"
+reference = "checkout_python_3.13"
 resolved_reference = "b2ec8d365c7d48134b21f754633f8fc4326efee1"
 
 [[package]]
@@ -4166,4 +4167,4 @@ testing = ["coverage[toml]", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.12,<4"
-content-hash = "4560e9d4e8645297c0ce3f556e51f3c8c04dc3beffaa80e3d04a0a75b29ce024"
+content-hash = "a5e5c6eaaa3a0067e33a4dfbf4497e20227170b7af9f967acb24febf70997eaa"
