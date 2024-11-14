@@ -3422,7 +3422,7 @@ ujson = "^5.9.0"
 type = "git"
 url = "https://github.com/cfpb/regtech-data-validator.git"
 reference = "checkout_python_3.13"
-resolved_reference = "b2ec8d365c7d48134b21f754633f8fc4326efee1"
+resolved_reference = "e41cb1b70670072a35bb8670bf081ee728054e7f"
 
 [[package]]
 name = "regtech-regex"
