@@ -6,16 +6,16 @@
 |-------------------------------------------------------- | -------: | -------: | -------: | -------: | ------: | --------: |
 | src/sbl\_filing\_api/config.py                          |       57 |        2 |        2 |        1 |     95% |     15-16 |
 | src/sbl\_filing\_api/entities/engine/engine.py          |       11 |        0 |        0 |        0 |    100% |           |
-| src/sbl\_filing\_api/entities/models/dao.py             |       96 |        5 |        0 |        0 |     95% |41, 60, 75, 96, 124 |
-| src/sbl\_filing\_api/entities/models/dto.py             |       89 |        0 |        8 |        2 |     98% |67->71, 71->75 |
+| src/sbl\_filing\_api/entities/models/dao.py             |       98 |        5 |        0 |        0 |     95% |44, 63, 78, 99, 127 |
+| src/sbl\_filing\_api/entities/models/dto.py             |       96 |        0 |        8 |        2 |     98% |75->79, 79->83 |
 | src/sbl\_filing\_api/entities/models/model\_enums.py    |       24 |        0 |        0 |        0 |    100% |           |
-| src/sbl\_filing\_api/entities/repos/submission\_repo.py |      122 |        4 |       18 |        3 |     95% |61->63, 69->71, 76->78, 115-118 |
+| src/sbl\_filing\_api/entities/repos/submission\_repo.py |      129 |        4 |       18 |        3 |     95% |67->69, 75->77, 82->84, 128-131 |
 | src/sbl\_filing\_api/main.py                            |       41 |       11 |        0 |        0 |     73% |35-40, 44-48 |
-| src/sbl\_filing\_api/routers/filing.py                  |      201 |        1 |       40 |        1 |     99% |       428 |
+| src/sbl\_filing\_api/routers/filing.py                  |      201 |        1 |       40 |        1 |     99% |       430 |
 | src/sbl\_filing\_api/services/file\_handler.py          |       22 |        0 |        4 |        0 |    100% |           |
 | src/sbl\_filing\_api/services/multithread\_handler.py   |       27 |        2 |        0 |        0 |     93% |     18-19 |
-| src/sbl\_filing\_api/services/submission\_processor.py  |       84 |        1 |       18 |        2 |     97% |64, 94->97 |
-|                                               **TOTAL** |  **774** |   **26** |   **90** |    **9** | **96%** |           |
+| src/sbl\_filing\_api/services/submission\_processor.py  |       86 |        1 |       18 |        2 |     97% |64, 94->97 |
+|                                               **TOTAL** |  **792** |   **26** |   **90** |    **9** | **96%** |           |
 
 6 empty files skipped.
 
