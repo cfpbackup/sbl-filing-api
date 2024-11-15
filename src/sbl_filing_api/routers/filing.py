@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import csv
+import io
 
 from concurrent.futures import ProcessPoolExecutor
 from fastapi import Depends, Request, UploadFile, status
@@ -163,7 +165,9 @@ async def sign_filing(request: Request, lei: str, period_code: str):
             action_type=UserActionType.SIGN,
         ),
     )
-    filing.confirmation_id = lei + "-" + period_code + "-" + str(latest_sub.id) + "-" + str(sig.timestamp.timestamp())
+    filing.confirmation_id = (
+        lei + "-" + period_code + "-" + str(latest_sub.counter) + "-" + str(int(sig.timestamp.timestamp()))
+    )
     filing.signatures.append(sig)
     return await repo.upsert_filing(request.state.db_session, filing)
 
@@ -195,10 +199,13 @@ async def upload_file(request: Request, lei: str, period_code: str, file: Upload
         submission = await repo.add_submission(request.state.db_session, filing.id, file.filename, submitter.id)
         try:
             submission_processor.upload_to_storage(
-                period_code, lei, submission.id, content, file.filename.split(".")[-1]
+                period_code, lei, submission.counter, content, file.filename.split(".")[-1]
             )
 
             submission.state = SubmissionState.SUBMISSION_UPLOADED
+            with io.BytesIO(content) as byte_stream:
+                reader = csv.reader(io.TextIOWrapper(byte_stream))
+                submission.total_records = sum(1 for row in reader) - 1
             submission = await repo.update_submission(request.state.db_session, submission)
         except Exception as e:
             submission.state = SubmissionState.UPLOAD_FAILED
@@ -260,24 +267,24 @@ async def get_submission_latest(request: Request, lei: str, period_code: str):
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.get("/institutions/{lei}/filings/{period_code}/submissions/{id}", response_model=SubmissionDTO | None)
+@router.get("/institutions/{lei}/filings/{period_code}/submissions/{counter}", response_model=SubmissionDTO | None)
 @requires("authenticated")
-async def get_submission(request: Request, response: Response, id: int):
-    result = await repo.get_submission(request.state.db_session, id)
+async def get_submission(request: Request, response: Response, counter: int, lei: str, period_code: str):
+    result = await repo.get_submission_by_counter(request.state.db_session, lei, period_code, counter)
     if result:
         return result
     response.status_code = status.HTTP_404_NOT_FOUND
 
 
-@router.put("/institutions/{lei}/filings/{period_code}/submissions/{id}/accept", response_model=SubmissionDTO)
+@router.put("/institutions/{lei}/filings/{period_code}/submissions/{counter}/accept", response_model=SubmissionDTO)
 @requires("authenticated")
-async def accept_submission(request: Request, id: int, lei: str, period_code: str):
-    submission = await repo.get_submission(request.state.db_session, id)
+async def accept_submission(request: Request, counter: int, lei: str, period_code: str):
+    submission = await repo.get_submission_by_counter(request.state.db_session, lei, period_code, counter)
     if not submission:
         raise RegTechHttpException(
             status_code=status.HTTP_404_NOT_FOUND,
             name="Submission Not Found",
-            detail=f"Submission ID {id} does not exist, cannot accept a non-existing submission.",
+            detail=f"Submission {counter} for LEI {lei} in filing period {period_code} does not exist, cannot accept a non-existing submission.",
         )
     if (
         submission.state != SubmissionState.VALIDATION_SUCCESSFUL
@@ -286,7 +293,7 @@ async def accept_submission(request: Request, id: int, lei: str, period_code: st
         raise RegTechHttpException(
             status_code=status.HTTP_403_FORBIDDEN,
             name="Submission Action Forbidden",
-            detail=f"Submission {id} for LEI {lei} in filing period {period_code} is not in an acceptable state.  Submissions must be validated successfully or with only warnings to be accepted.",
+            detail=f"Submission {counter} for LEI {lei} in filing period {period_code} is not in an acceptable state.  Submissions must be validated successfully or with only warnings to be accepted.",
         )
 
     accepter = await repo.add_user_action(
@@ -368,13 +375,13 @@ async def get_latest_submission_report(request: Request, lei: str, period_code: 
         SubmissionState.SUBMISSION_ACCEPTED,
     ]:
         file_data = submission_processor.get_from_storage(
-            period_code, lei, str(latest_sub.id) + submission_processor.REPORT_QUALIFIER
+            period_code, lei, str(latest_sub.counter) + submission_processor.REPORT_QUALIFIER
         )
         return StreamingResponse(
             content=file_data,
             media_type="text/csv",
             headers={
-                "Content-Disposition": f'attachment; filename="{latest_sub.id}_validation_report.csv"',
+                "Content-Disposition": f'attachment; filename="{latest_sub.counter}_validation_report.csv"',
                 "Cache-Control": "no-store",
             },
         )
@@ -387,12 +394,12 @@ async def get_latest_submission_report(request: Request, lei: str, period_code: 
 
 
 @router.get(
-    "/institutions/{lei}/filings/{period_code}/submissions/{id}/report",
+    "/institutions/{lei}/filings/{period_code}/submissions/{counter}/report",
     responses={200: {"content": {"text/plain; charset=utf-8": {}}}},
 )
 @requires("authenticated")
-async def get_submission_report(request: Request, response: Response, lei: str, period_code: str, id: int):
-    sub = await repo.get_submission(request.state.db_session, id)
+async def get_submission_report(request: Request, response: Response, lei: str, period_code: str, counter: int):
+    sub = await repo.get_submission_by_counter(request.state.db_session, lei, period_code, counter)
     if sub and sub.state in [
         SubmissionState.VALIDATION_SUCCESSFUL,
         SubmissionState.VALIDATION_WITH_ERRORS,
@@ -400,13 +407,13 @@ async def get_submission_report(request: Request, response: Response, lei: str, 
         SubmissionState.SUBMISSION_ACCEPTED,
     ]:
         file_data = submission_processor.get_from_storage(
-            period_code, lei, str(sub.id) + submission_processor.REPORT_QUALIFIER
+            period_code, lei, str(sub.counter) + submission_processor.REPORT_QUALIFIER
         )
         return StreamingResponse(
             content=file_data,
             media_type="text/csv",
             headers={
-                "Content-Disposition": f'attachment; filename="{sub.id}_validation_report.csv"',
+                "Content-Disposition": f'attachment; filename="{sub.counter}_validation_report.csv"',
                 "Cache-Control": "no-store",
             },
         )
@@ -414,7 +421,7 @@ async def get_submission_report(request: Request, response: Response, lei: str, 
         raise RegTechHttpException(
             status_code=status.HTTP_404_NOT_FOUND,
             name="Report Not Found",
-            detail=f"Report for ({id}) does not exist.",
+            detail=f"Report for ({lei}-{period_code}-{counter}) does not exist.",
         )
 
 
