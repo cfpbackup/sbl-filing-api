@@ -75,7 +75,7 @@ async def validate_and_update_submission(
             submission.state = SubmissionState.VALIDATION_IN_PROGRESS
             submission = await update_submission(session, submission)
 
-            file_path = generate_file_path(period_code, lei, submission.id)
+            file_path = generate_file_path(period_code, lei, submission.counter)
 
             final_phase = ValidationPhase.LOGICAL
             all_findings = []
@@ -112,8 +112,9 @@ async def validate_and_update_submission(
                 error_count=sum([r.error_counts.total_count for r in all_findings]),
                 max_errors=settings.max_validation_errors,
             )
+            upload_to_storage(period_code, lei, str(submission.counter) + REPORT_QUALIFIER, submission_report)
 
-            upload_to_storage(period_code, lei, str(submission.id) + REPORT_QUALIFIER, submission_report)
+            upload_to_storage(period_code, lei, str(submission.counter) + REPORT_QUALIFIER, submission_report)
 
             if not exec_check["continue"]:
                 log.warning(f"Submission {submission.id} is expired, will not be updating final state with results.")
@@ -126,7 +127,8 @@ async def validate_and_update_submission(
             submission.state = SubmissionState.SUBMISSION_UPLOAD_MALFORMED
             await update_submission(session, submission)
 
-        except Exception:
+        except Exception as e:
+            print(f"{e}")
             log.exception("Validation for submission %d did not complete due to an unexpected error.", submission.id)
             submission.state = SubmissionState.VALIDATION_ERROR
             await update_submission(session, submission)

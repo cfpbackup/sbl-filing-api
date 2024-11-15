@@ -18,6 +18,7 @@ class SubmissionDTO(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int | None = None
+    counter: int
     state: SubmissionState | None = None
     validation_ruleset_version: str | None = None
     validation_results: Dict[str, Any] | None = None
@@ -26,6 +27,13 @@ class SubmissionDTO(BaseModel):
     total_records: int | None = None
     submitter: UserActionDTO
     accepter: UserActionDTO | None = None
+
+    @model_validator(mode="after")
+    def validate_fi(self) -> "SubmissionDTO":
+        print(f"Self: {self}")
+        self.id = self.counter
+        print(f"Self: {self}")
+        return self
 
 
 class FilingTaskDTO(BaseModel):

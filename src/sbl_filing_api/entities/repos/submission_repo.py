@@ -56,6 +56,12 @@ async def get_submission(session: AsyncSession, submission_id: int) -> Submissio
     return result[0] if result else None
 
 
+async def get_submission_by_counter(session: AsyncSession, lei: str, filing_period: str, counter: int) -> SubmissionDAO:
+    filing = await get_filing(session, lei=lei, filing_period=filing_period)
+    result = await query_helper(session, SubmissionDAO, filing=filing.id, counter=counter)
+    return result[0] if result else None
+
+
 async def get_filing(session: AsyncSession, lei: str, filing_period: str) -> FilingDAO:
     result = await query_helper(session, FilingDAO, lei=lei, filing_period=filing_period)
     if result:
@@ -98,8 +104,15 @@ async def get_user_actions(session: AsyncSession) -> List[UserActionDAO]:
 
 
 async def add_submission(session: AsyncSession, filing_id: int, filename: str, submitter_id: int) -> SubmissionDAO:
+    stmt = select(SubmissionDAO).filter_by(filing=filing_id).order_by(desc(SubmissionDAO.counter)).limit(1)
+    last_sub = await session.scalar(stmt)
+    current_count = last_sub.counter if last_sub else 0
     new_sub = SubmissionDAO(
-        filing=filing_id, state=SubmissionState.SUBMISSION_STARTED, filename=filename, submitter_id=submitter_id
+        filing=filing_id,
+        state=SubmissionState.SUBMISSION_STARTED,
+        filename=filename,
+        submitter_id=submitter_id,
+        counter=(current_count + 1),
     )
     # this returns the attached object, most importantly with the new submission id
     new_sub = await session.merge(new_sub)
