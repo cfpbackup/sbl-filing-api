@@ -59,6 +59,7 @@ class Settings(BaseSettings):
     expired_submission_check_secs: int = 120
 
     user_fi_api_url: str = "http://sbl-project-user_fi-1:8888/v1/institutions/"
+    mail_api_url: str = "http://mail-api:8765/internal/confirmation/send"
 
     max_validation_errors: int = 1000000
     max_json_records: int = 10000

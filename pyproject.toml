@@ -77,7 +77,8 @@ env = [
   "FS_UPLOAD_CONFIG__ROOT=../upload",
   "FS_UPLOAD_CONFIG__MKDIR=true",
   "FS_DOWNLOAD_CONFIG__PROTOCOL=file",
-  "ENV=TEST"
+  "ENV=TEST",
+  "MAIL_API_URL=http://mail-api:8765/internal/confirmation/send"
 ]
 testpaths = ["tests"]
 
