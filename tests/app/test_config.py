@@ -27,3 +27,8 @@ def test_default_server_configs():
     assert settings.server_config.reload is False
     assert settings.server_config.time_out == 65
     assert settings.server_config.port == 8888
+
+
+def test_url_configs():
+    settings = Settings()
+    assert settings.mail_api_url == "http://mail-api:8765/internal/confirmation/send"
