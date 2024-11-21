@@ -11,6 +11,11 @@ COPY --chown=sbl:sbl poetry.lock pyproject.toml alembic.ini README.md ./
 RUN poetry config virtualenvs.create false
 RUN poetry install --only main --no-root
 
+ARG IS_MAC
+RUN if [ "$IS_MAC" = "true" ]; then \
+        poetry add polars-lts-cpu; \
+    fi
+
 COPY --chown=sbl:sbl ./src ./src
 COPY --chown=sbl:sbl ./db_revisions ./db_revisions
 
