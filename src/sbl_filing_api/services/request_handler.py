@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import httpx
 from sbl_filing_api.config import settings
 
