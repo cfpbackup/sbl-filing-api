@@ -2,10 +2,9 @@ import logging
 
 import httpx
 from sbl_filing_api.config import settings
-from fastapi import status
-from regtech_api_commons.api.exceptions import RegTechHttpException
 
 logger = logging.getLogger(__name__)
+
 
 def send_confirmation_email(
     user_full_name: str, user_email: str, contact_info_email: str, confirmation_id: str, timestamp: int

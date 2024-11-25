@@ -1,5 +1,4 @@
 from unittest.mock import ANY
-from regtech_api_commons.api.exceptions import RegTechHttpException
 from pytest_mock import MockerFixture
 from sbl_filing_api.services.request_handler import send_confirmation_email
 
@@ -29,5 +28,4 @@ def test_send_confirmation_email(mocker: MockerFixture, caplog):
 
     post_mock.side_effect = IOError("test")
     send_confirmation_email("full_name", "user@email.com", "contact@info.com", "confirmation", 12345)
-    assert 'Failed to send confirmation email for full_name' in caplog.messages[1]
-
+    assert "Failed to send confirmation email for full_name" in caplog.messages[1]
