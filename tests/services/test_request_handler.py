@@ -1,13 +1,13 @@
-import pytest
 from unittest.mock import ANY
 from regtech_api_commons.api.exceptions import RegTechHttpException
 from pytest_mock import MockerFixture
 from sbl_filing_api.services.request_handler import send_confirmation_email
 
 
-def test_send_confirmation_email(mocker: MockerFixture):
+def test_send_confirmation_email(mocker: MockerFixture, caplog):
     # No errors
     post_mock = mocker.patch("sbl_filing_api.services.request_handler.httpx.post")
+    post_mock.return_value.status_code = 200
     send_confirmation_email("full_name", "user@email.com", "contact@info.com", "confirmation", 12345)
     post_mock.assert_called_with(
         ANY,
@@ -21,10 +21,13 @@ def test_send_confirmation_email(mocker: MockerFixture):
     )
 
     # With errors
+    post_mock.side_effect = None
+    post_mock.return_value.status_code = 400
+    post_mock.return_value.text = "Email_response"
+    send_confirmation_email("full_name", "user@email.com", "contact@info.com", "confirmation", 12345)
+    assert "Email_response" in caplog.messages[0]
+
     post_mock.side_effect = IOError("test")
-    with pytest.raises(Exception) as e:
-        send_confirmation_email("full_name", "user@email.com", "contact@info.com", "confirmation", 12345)
-    assert isinstance(e.value, RegTechHttpException)
-    assert e.value.status_code == 503
-    assert e.value.name == "Confirmation Email Send Fail"
-    assert e.value.detail == "Failed to send confirmation email for user@email.com."
+    send_confirmation_email("full_name", "user@email.com", "contact@info.com", "confirmation", 12345)
+    assert 'Failed to send confirmation email for full_name' in caplog.messages[1]
+
