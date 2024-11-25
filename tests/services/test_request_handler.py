@@ -6,9 +6,9 @@ from sbl_filing_api.services.request_handler import send_confirmation_email
 
 
 def test_send_confirmation_email(mocker: MockerFixture):
+    # No errors
     post_mock = mocker.patch("sbl_filing_api.services.request_handler.httpx.post")
     send_confirmation_email("full_name", "user@email.com", "contact@info.com", "confirmation", 12345)
-
     post_mock.assert_called_with(
         ANY,
         json={
@@ -20,6 +20,7 @@ def test_send_confirmation_email(mocker: MockerFixture):
         },
     )
 
+    # With errors
     post_mock.side_effect = IOError("test")
     with pytest.raises(Exception) as e:
         send_confirmation_email("full_name", "user@email.com", "contact@info.com", "confirmation", 12345)
