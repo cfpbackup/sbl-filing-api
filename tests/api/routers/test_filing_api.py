@@ -1026,6 +1026,9 @@ class TestFilingApi:
             action_type=UserActionType.SIGN,
         )
 
+        send_email_mock = mocker.patch("sbl_filing_api.routers.filing.send_confirmation_email")
+        send_email_mock.return_value = None
+
         upsert_mock = mocker.patch("sbl_filing_api.entities.repos.submission_repo.upsert_filing")
         updated_filing_obj = deepcopy(get_filing_mock.return_value)
         upsert_mock.return_value = updated_filing_obj
@@ -1051,6 +1054,8 @@ class TestFilingApi:
         self, mocker: MockerFixture, app_fixture: FastAPI, authed_user_mock: Mock, get_filing_mock: Mock
     ):
         sub_mock = mocker.patch("sbl_filing_api.entities.repos.submission_repo.get_latest_submission")
+        send_email_mock = mocker.patch("sbl_filing_api.services.request_handler.send_confirmation_email")
+        send_email_mock.return_value = None
         sub_mock.return_value = SubmissionDAO(
             id=1,
             submitter=UserActionDAO(
