@@ -1045,7 +1045,7 @@ class TestFilingApi:
                 action_type=UserActionType.SIGN,
             ),
         )
-        send_email_mock.assert_called_with("Test User", "test@local.host", 'test1@cfpb.gov', ANY, ANY)
+        send_email_mock.assert_called_with("Test User", "test@local.host", "test1@cfpb.gov", ANY, ANY)
         assert upsert_mock.call_args.args[1].confirmation_id.startswith("1234567890ABCDEFGH00-2024-5-")
         assert res.status_code == 200
         assert float(upsert_mock.call_args.args[1].confirmation_id.split("-")[3]) == pytest.approx(

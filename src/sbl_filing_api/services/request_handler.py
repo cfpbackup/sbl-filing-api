@@ -8,7 +8,11 @@ logger = logging.getLogger(__name__)
 
 
 def send_confirmation_email(
-    user_full_name: EmailStr, user_email: EmailStr, contact_info_email: EmailStr, confirmation_id: EmailStr, timestamp: int
+    user_full_name: EmailStr,
+    user_email: EmailStr,
+    contact_info_email: EmailStr,
+    confirmation_id: EmailStr,
+    timestamp: int,
 ):
     confirmation_request = {
         "confirmation_id": confirmation_id,
