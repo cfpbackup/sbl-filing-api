@@ -1,13 +1,14 @@
 import logging
 
 import httpx
+from pydantic import EmailStr
 from sbl_filing_api.config import settings
 
 logger = logging.getLogger(__name__)
 
 
 def send_confirmation_email(
-    user_full_name: str, user_email: str, contact_info_email: str, confirmation_id: str, timestamp: int
+    user_full_name: EmailStr, user_email: EmailStr, contact_info_email: EmailStr, confirmation_id: EmailStr, timestamp: int
 ):
     confirmation_request = {
         "confirmation_id": confirmation_id,
@@ -20,5 +21,7 @@ def send_confirmation_email(
         res = httpx.post(settings.mail_api_url, json=confirmation_request)
         if res.status_code != 200:
             logger.error(res.text)
+        else:
+            logger.info(res.text)
     except Exception:
         logger.exception(f"Failed to send confirmation email for {user_full_name}")
