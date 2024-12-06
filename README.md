@@ -2,21 +2,22 @@
 
 [Full report](https://htmlpreview.github.io/?https://github.com/cfpb/sbl-filing-api/blob/python-coverage-comment-action-data/htmlcov/index.html)
 
-| Name                                                    |    Stmts |     Miss |   Branch |   BrPart |   Cover |   Missing |
-|-------------------------------------------------------- | -------: | -------: | -------: | -------: | ------: | --------: |
-| src/sbl\_filing\_api/config.py                          |       58 |        2 |        2 |        1 |     95% |     15-16 |
-| src/sbl\_filing\_api/entities/engine/engine.py          |       11 |        0 |        0 |        0 |    100% |           |
-| src/sbl\_filing\_api/entities/models/dao.py             |       98 |        5 |        0 |        0 |     95% |44, 63, 78, 99, 127 |
-| src/sbl\_filing\_api/entities/models/dto.py             |       90 |        0 |        8 |        2 |     98% |68->72, 72->76 |
-| src/sbl\_filing\_api/entities/models/model\_enums.py    |       24 |        0 |        0 |        0 |    100% |           |
-| src/sbl\_filing\_api/entities/repos/submission\_repo.py |      129 |        4 |       18 |        3 |     95% |67->69, 75->77, 82->84, 128-131 |
-| src/sbl\_filing\_api/main.py                            |       41 |       11 |        0 |        0 |     73% |35-40, 44-48 |
-| src/sbl\_filing\_api/routers/filing.py                  |      206 |        1 |       42 |        1 |     99% |       440 |
-| src/sbl\_filing\_api/services/file\_handler.py          |       22 |        0 |        4 |        0 |    100% |           |
-| src/sbl\_filing\_api/services/multithread\_handler.py   |       27 |        2 |        0 |        0 |     93% |     18-19 |
-| src/sbl\_filing\_api/services/request\_handler.py       |       14 |        0 |        2 |        0 |    100% |           |
-| src/sbl\_filing\_api/services/submission\_processor.py  |       84 |        1 |       18 |        2 |     97% |64, 94->97 |
-|                                               **TOTAL** |  **804** |   **26** |   **94** |    **9** | **96%** |           |
+| Name                                                        |    Stmts |     Miss |   Branch |   BrPart |   Cover |   Missing |
+|------------------------------------------------------------ | -------: | -------: | -------: | -------: | ------: | --------: |
+| src/sbl\_filing\_api/config.py                              |       62 |        2 |        2 |        1 |     95% |     15-16 |
+| src/sbl\_filing\_api/entities/engine/engine.py              |       11 |        0 |        0 |        0 |    100% |           |
+| src/sbl\_filing\_api/entities/models/dao.py                 |       99 |        5 |        0 |        0 |     95% |44, 63, 78, 99, 130 |
+| src/sbl\_filing\_api/entities/models/dto.py                 |       90 |        0 |        8 |        2 |     98% |68->72, 72->76 |
+| src/sbl\_filing\_api/entities/models/model\_enums.py        |       24 |        0 |        0 |        0 |    100% |           |
+| src/sbl\_filing\_api/entities/repos/submission\_repo.py     |      115 |       13 |       14 |        0 |     88% |86, 120-123, 149-157 |
+| src/sbl\_filing\_api/main.py                                |       41 |       11 |        0 |        0 |     73% |35-40, 44-48 |
+| src/sbl\_filing\_api/routers/filing.py                      |      200 |        1 |       34 |        1 |     99% |       419 |
+| src/sbl\_filing\_api/services/file\_handler.py              |       22 |        0 |        4 |        0 |    100% |           |
+| src/sbl\_filing\_api/services/multithread\_handler.py       |       27 |        2 |        0 |        0 |     93% |     18-19 |
+| src/sbl\_filing\_api/services/request\_action\_validator.py |      118 |        3 |       30 |        2 |     97% |43, 56-57, 78->exit, 163->165 |
+| src/sbl\_filing\_api/services/request\_handler.py           |       14 |        0 |        2 |        0 |    100% |           |
+| src/sbl\_filing\_api/services/submission\_processor.py      |       84 |        1 |       18 |        2 |     97% |64, 94->97 |
+|                                                   **TOTAL** |  **907** |   **38** |  **112** |    **8** | **95%** |           |
 
 6 empty files skipped.
 
