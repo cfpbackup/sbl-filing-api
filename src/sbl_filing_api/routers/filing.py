@@ -43,6 +43,12 @@ from sbl_filing_api.services.request_handler import send_confirmation_email
 
 from sbl_filing_api.services.request_action_validator import UserActionContext, validate_user_action, set_context
 
+import polars as pl
+import boto3.session
+from regtech_data_validator.data_formatters import df_to_dicts
+from regtech_data_validator. validator import get_scope_counts, ValidationResults
+from sbl_filing_api.config import settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -199,10 +205,10 @@ async def upload_file(request: Request, lei: str, period_code: str, file: Upload
                 detail=f"Error while trying to process Submission {submission.id}",
             ) from e
 
-        exec_check = Manager().dict()
-        exec_check["continue"] = True
-        loop = asyncio.get_event_loop()
-        loop.run_in_executor(executor, handle_submission, period_code, lei, submission, content, exec_check)
+        # exec_check = Manager().dict()
+        # exec_check["continue"] = True
+        # loop = asyncio.get_event_loop()
+        # loop.run_in_executor(executor, handle_submission, period_code, lei, submission, content, exec_check)
 
         return submission
 
@@ -421,3 +427,35 @@ async def update_is_voluntary(request: Request, lei: str, period_code: str, upda
         name="Filing Not Found",
         detail=f"A Filing for the LEI ({lei}) and period ({period_code}) that was attempted to be updated does not exist.",
     )
+
+@router.get("/institutions/{lei}/filings/{period_code}/submissions/{counter}/validation_result")
+@requires("authenticated")
+async def get_submission_rep(request: Request, lei: str, period_code: str, counter: int, page: int = 1, offset: int = 100):
+    session = boto3.session.Session()
+    creds = session.get_credentials()
+    storage_options = {
+        'aws_access_key_id': creds.access_key,
+        'aws_secret_access_key': creds.secret_key,
+        'session_token': creds.token,
+        'aws_region': 'us-east-1',
+    }
+
+    bucket = settings.fs_upload_config.root
+    key=f"upload/{period_code}/{lei}/{counter}_res/"
+    lf = pl.scan_parquet(f"s3://{bucket}/{key}", allow_missing_columns=True, storage_options=storage_options)
+    # lf.select(pl.len()).collect()
+    df = lf.slice((page - 1) * offset, offset).collect()
+
+    error_counts, warning_counts = get_scope_counts(df)
+
+    vres = ValidationResults(
+        error_counts=error_counts,
+        warning_counts=warning_counts,
+        is_valid=((error_counts.total_count + warning_counts.total_count) == 0),
+        findings=df,
+        phase=df.select(pl.first("phase")).item(),
+    )
+
+    final_df = pl.concat([df], how="diagonal")
+    
+    return submission_processor.build_validation_results(final_df, [vres], vres.phase)
