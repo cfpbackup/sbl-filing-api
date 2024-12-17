@@ -140,6 +140,7 @@ class TestSubmissionRepo:
             validation_ruleset_version="v1",
             submission_time=dt.now(),
             filename="file1.csv",
+            counter=1,
         )
 
         submission2 = SubmissionDAO(
@@ -150,6 +151,7 @@ class TestSubmissionRepo:
             validation_ruleset_version="v1",
             submission_time=(dt.now() - datetime.timedelta(seconds=200)),
             filename="file2.csv",
+            counter=1,
         )
         submission3 = SubmissionDAO(
             id=3,
@@ -159,6 +161,7 @@ class TestSubmissionRepo:
             validation_ruleset_version="v1",
             submission_time=dt.now(),
             filename="file3.csv",
+            counter=2,
         )
         submission4 = SubmissionDAO(
             id=4,
@@ -167,6 +170,7 @@ class TestSubmissionRepo:
             validation_ruleset_version="v1",
             submission_time=(dt.now() - datetime.timedelta(seconds=400)),
             filename="file4.csv",
+            counter=2,
         )
         submission1.submitter = user_action2
         submission2.submitter = user_action2
@@ -464,6 +468,7 @@ class TestSubmissionRepo:
         )
         assert res.id == 5
         assert res.filing == 1
+        assert res.counter == 3
         assert res.state == SubmissionState.SUBMISSION_STARTED
         assert res.submitter.id == user_action_submit.id
         assert res.submitter.user_id == user_action_submit.user_id
@@ -518,6 +523,7 @@ class TestSubmissionRepo:
                 new_res2 = await search_session.scalar(stmt)
                 assert new_res2.id == 5
                 assert new_res2.filing == 1
+                assert new_res2.counter == 3
                 assert new_res2.state == SubmissionState.VALIDATION_WITH_ERRORS
                 assert new_res2.validation_results == validation_results
 

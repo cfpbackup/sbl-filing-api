@@ -159,7 +159,9 @@ async def sign_filing(request: Request, lei: str, period_code: str):
             action_type=UserActionType.SIGN,
         ),
     )
-    filing.confirmation_id = lei + "-" + period_code + "-" + str(latest_sub.id) + "-" + str(sig.timestamp.timestamp())
+    filing.confirmation_id = (
+        lei + "-" + period_code + "-" + str(latest_sub.counter) + "-" + str(int(sig.timestamp.timestamp()))
+    )
     filing.signatures.append(sig)
     return await repo.upsert_filing(request.state.db_session, filing)
 
@@ -191,7 +193,7 @@ async def upload_file(request: Request, lei: str, period_code: str, file: Upload
         submission = await repo.add_submission(request.state.db_session, filing.id, file.filename, submitter.id)
         try:
             submission_processor.upload_to_storage(
-                period_code, lei, submission.id, content, file.filename.split(".")[-1]
+                period_code, lei, submission.counter, content, file.filename.split(".")[-1]
             )
 
             submission.state = SubmissionState.SUBMISSION_UPLOADED
@@ -364,13 +366,13 @@ async def get_latest_submission_report(request: Request, lei: str, period_code: 
         SubmissionState.SUBMISSION_ACCEPTED,
     ]:
         file_data = submission_processor.get_from_storage(
-            period_code, lei, str(latest_sub.id) + submission_processor.REPORT_QUALIFIER
+            period_code, lei, str(latest_sub.counter) + submission_processor.REPORT_QUALIFIER
         )
         return StreamingResponse(
             content=file_data,
             media_type="text/csv",
             headers={
-                "Content-Disposition": f'attachment; filename="{latest_sub.id}_validation_report.csv"',
+                "Content-Disposition": f'attachment; filename="{latest_sub.counter}_validation_report.csv"',
                 "Cache-Control": "no-store",
             },
         )
@@ -396,13 +398,13 @@ async def get_submission_report(request: Request, response: Response, lei: str, 
         SubmissionState.SUBMISSION_ACCEPTED,
     ]:
         file_data = submission_processor.get_from_storage(
-            period_code, lei, str(sub.id) + submission_processor.REPORT_QUALIFIER
+            period_code, lei, str(sub.counter) + submission_processor.REPORT_QUALIFIER
         )
         return StreamingResponse(
             content=file_data,
             media_type="text/csv",
             headers={
-                "Content-Disposition": f'attachment; filename="{sub.id}_validation_report.csv"',
+                "Content-Disposition": f'attachment; filename="{sub.counter}_validation_report.csv"',
                 "Cache-Control": "no-store",
             },
         )

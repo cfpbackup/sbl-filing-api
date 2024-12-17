@@ -84,9 +84,12 @@ class TestSubmissionProcessor:
         mock_sub = SubmissionDAO(
             id=1,
             filing=1,
+            counter=2,
             state=SubmissionState.SUBMISSION_UPLOADED,
             filename="submission.csv",
         )
+        successful_submission_mock.return_value.counter = 2
+
         file_mock = mocker.patch("sbl_filing_api.services.submission_processor.upload_to_storage")
         df_to_download_mock.return_value = ""
 
@@ -97,7 +100,7 @@ class TestSubmissionProcessor:
         assert file_mock.mock_calls[0].args == (
             "2024",
             "123456790",
-            "1" + submission_processor.REPORT_QUALIFIER,
+            "2" + submission_processor.REPORT_QUALIFIER,
             encoded_results,
         )
         assert successful_submission_mock.mock_calls[0].args[1].state == SubmissionState.VALIDATION_IN_PROGRESS
@@ -114,10 +117,12 @@ class TestSubmissionProcessor:
         mock_sub = SubmissionDAO(
             id=1,
             filing=1,
+            counter=3,
             state=SubmissionState.SUBMISSION_UPLOADED,
             filename="submission.csv",
         )
         file_mock = mocker.patch("sbl_filing_api.services.submission_processor.upload_to_storage")
+        warning_submission_mock.return_value.counter = 3
 
         mock_build_json = mocker.patch("sbl_filing_api.services.submission_processor.build_validation_results")
         mock_build_json.return_value = {"logic_errors": {"total_count": 0}, "logic_warnings": {"total_count": 1}}
@@ -129,7 +134,7 @@ class TestSubmissionProcessor:
         assert file_mock.mock_calls[0].args == (
             "2024",
             "123456790",
-            "1" + submission_processor.REPORT_QUALIFIER,
+            "3" + submission_processor.REPORT_QUALIFIER,
             encoded_results,
         )
         assert warning_submission_mock.mock_calls[0].args[1].state == SubmissionState.VALIDATION_IN_PROGRESS
@@ -146,9 +151,11 @@ class TestSubmissionProcessor:
         mock_sub = SubmissionDAO(
             id=1,
             filing=1,
+            counter=4,
             state=SubmissionState.SUBMISSION_UPLOADED,
             filename="submission.csv",
         )
+        error_submission_mock.return_value.counter = 4
 
         file_mock = mocker.patch("sbl_filing_api.services.submission_processor.upload_to_storage")
 
@@ -161,7 +168,7 @@ class TestSubmissionProcessor:
         assert file_mock.mock_calls[0].args == (
             "2024",
             "123456790",
-            "1" + submission_processor.REPORT_QUALIFIER,
+            "4" + submission_processor.REPORT_QUALIFIER,
             encoded_results,
         )
         assert error_submission_mock.mock_calls[0].args[1].state == SubmissionState.VALIDATION_IN_PROGRESS

@@ -103,7 +103,7 @@ async def validate_and_update_submission(
             )
             
             upload_to_storage(
-                period_code, lei, str(submission.id) + REPORT_QUALIFIER, submission_report.encode("utf-8")
+                period_code, lei, str(submission.counter) + REPORT_QUALIFIER, submission_report.encode("utf-8")
             )
             log.error(f"E Processing took {(datetime.now() - e_start).total_seconds()} seconds")
             if not exec_check["continue"]:
