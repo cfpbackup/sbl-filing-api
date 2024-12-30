@@ -95,6 +95,8 @@ class RequestActionValidations(BaseSettings):
 
     filing_create: Set[str] = {"valid_period_exists", "valid_no_filing_exists"}
 
+    filing_reopen: Set[str] = {"valid_filing_exists", "valid_filing_not_open"}
+
     model_config = SettingsConfigDict(env_prefix="request_validators__", env_file=env_files_to_load, extra="allow")
 
 

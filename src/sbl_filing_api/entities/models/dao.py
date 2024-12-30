@@ -1,4 +1,10 @@
-from sbl_filing_api.entities.models.model_enums import FilingType, FilingTaskState, SubmissionState, UserActionType
+from sbl_filing_api.entities.models.model_enums import (
+    FilingType,
+    FilingTaskState,
+    SubmissionState,
+    UserActionType,
+    FilingState,
+)
 from datetime import datetime
 from typing import Any, List
 from sqlalchemy import Enum as SAEnum, String, desc
@@ -125,6 +131,7 @@ class FilingDAO(Base):
     creator_id: Mapped[int] = mapped_column(ForeignKey("user_action.id"))
     creator: Mapped[UserActionDAO] = relationship(lazy="selectin", foreign_keys=[creator_id])
     is_voluntary: Mapped[bool] = mapped_column(nullable=True)
+    state: Mapped[FilingState | None] = mapped_column(nullable=True)
 
     def __str__(self):
         return f"ID: {self.id}, Filing Period: {self.filing_period}, LEI: {self.lei}, Tasks: {self.tasks}, Institution Snapshot ID: {self.institution_snapshot_id}, Contact Info: {self.contact_info}"

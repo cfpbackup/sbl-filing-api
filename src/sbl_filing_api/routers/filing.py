@@ -12,7 +12,7 @@ from regtech_api_commons.api.exceptions import RegTechHttpException
 from regtech_api_commons.models.auth import AuthenticatedUser
 
 from sbl_filing_api.entities.models.dao import FilingDAO
-from sbl_filing_api.entities.models.model_enums import UserActionType
+from sbl_filing_api.entities.models.model_enums import UserActionType, FilingState
 from sbl_filing_api.services import submission_processor
 from sbl_filing_api.services.multithread_handler import handle_submission
 from sbl_filing_api.config import request_action_validations
@@ -410,4 +410,35 @@ async def update_is_voluntary(request: Request, lei: str, period_code: str, upda
         status_code=status.HTTP_404_NOT_FOUND,
         name="Filing Not Found",
         detail=f"A Filing for the LEI ({lei}) and period ({period_code}) that was attempted to be updated does not exist.",
+    )
+
+
+@router.put(
+    "/institutions/{lei}/filings/{period_code}/reopen",
+    response_model=FilingDTO,
+    dependencies=[
+        Depends(set_context({UserActionContext.FILING})),
+        Depends(validate_user_action(request_action_validations.filing_reopen, "Filing Reopen Forbidden")),
+    ],
+)
+@requires("authenticated")
+async def reopen_filing(request: Request, lei: str, period_code: str):
+    reopener = await repo.add_user_action(
+        request.state.db_session,
+        UserActionDTO(
+            user_id=request.user.id,
+            user_name=request.user.name,
+            user_email=request.user.email,
+            action_type=UserActionType.REOPEN,
+        ),
+    )
+    filing = await repo.get_filing(request.state.db_session, lei, period_code)
+    if filing:
+        filing.state = FilingState.OPEN
+        res = await repo.upsert_filing(request.state.db_session, filing)
+        return res
+    raise RegTechHttpException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        name="Filing Not Found",
+        detail=f"A Filing for the LEI ({lei}) and period ({period_code}) that was attempted to be reopened does not exist.",
     )

@@ -1,6 +1,7 @@
 import logging
 
 from sbl_filing_api.entities.models.dao import FilingDAO
+from sbl_filing_api.entities.models.model_enums import FilingState
 from .base_validator import ActionValidator
 
 log = logging.getLogger(__name__)
@@ -40,3 +41,12 @@ class ValidContactInfo(ActionValidator):
     def __call__(self, filing: FilingDAO, **kwargs):
         if filing and not filing.contact_info:
             return f"Cannot sign filing. Filing for {filing.lei} for period {filing.filing_period} does not have contact info defined."
+
+
+class ValidFilingNotOpen(ActionValidator):
+    def __init__(self):
+        super().__init__("valid_filing_not_open")
+
+    def __call__(self, *args, filing: FilingDAO, **kwargs):
+        if filing and filing.state is FilingState.OPEN:
+            return f"Cannot reopen filing. Filing state for {filing.lei} for period {filing.filing_period} is OPEN."
