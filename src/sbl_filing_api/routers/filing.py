@@ -434,12 +434,6 @@ async def reopen_filing(request: Request, lei: str, period_code: str):
         ),
     )
     filing = await repo.get_filing(request.state.db_session, lei, period_code)
-    if filing:
-        filing.state = FilingState.OPEN
-        res = await repo.upsert_filing(request.state.db_session, filing)
-        return res
-    raise RegTechHttpException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        name="Filing Not Found",
-        detail=f"A Filing for the LEI ({lei}) and period ({period_code}) that was attempted to be reopened does not exist.",
-    )
+    filing.state = FilingState.OPEN
+    res = await repo.upsert_filing(request.state.db_session, filing)
+    return res
