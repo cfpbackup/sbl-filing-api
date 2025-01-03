@@ -1,4 +1,4 @@
-import pandas as pd
+import polars as pl
 import pytest
 
 from http import HTTPStatus
@@ -8,7 +8,8 @@ from unittest.mock import Mock
 from pytest_mock import MockerFixture
 from sbl_filing_api.config import settings
 from sbl_filing_api.entities.models.dao import SubmissionDAO, SubmissionState
-from regtech_data_validator.validation_results import ValidationResults, ValidationPhase, Counts
+from regtech_data_validator.validation_results import ValidationPhase, ValidationResults, Counts
+from regtech_data_validator.checks import Severity
 from regtech_api_commons.api.exceptions import RegTechHttpException
 
 
@@ -79,7 +80,6 @@ class TestSubmissionProcessor:
         mocker: MockerFixture,
         successful_submission_mock: Mock,
         build_validation_results_mock: Mock,
-        df_to_download_mock: Mock,
     ):
         mock_sub = SubmissionDAO(
             id=1,
@@ -90,29 +90,36 @@ class TestSubmissionProcessor:
         )
         successful_submission_mock.return_value.counter = 2
 
+<<<<<<< HEAD
+=======
+        mock_download_formatting = mocker.patch("sbl_filing_api.services.submission_processor.df_to_download")
+        mock_download_formatting.return_value = b"\x01"
+
+>>>>>>> main
         file_mock = mocker.patch("sbl_filing_api.services.submission_processor.upload_to_storage")
-        df_to_download_mock.return_value = ""
 
         await submission_processor.validate_and_update_submission(
             "2024", "123456790", mock_sub, None, {"continue": True}
         )
-        encoded_results = df_to_download_mock.return_value.encode("utf-8")
-        assert file_mock.mock_calls[0].args == (
+
+        file_mock.assert_called_once_with(
             "2024",
             "123456790",
             "2" + submission_processor.REPORT_QUALIFIER,
+<<<<<<< HEAD
             encoded_results,
+=======
+            mock_download_formatting.return_value,
+>>>>>>> main
         )
         assert successful_submission_mock.mock_calls[0].args[1].state == SubmissionState.VALIDATION_IN_PROGRESS
         assert successful_submission_mock.mock_calls[0].args[1].validation_ruleset_version == "0.1.0"
         assert successful_submission_mock.mock_calls[1].args[1].state == "VALIDATION_SUCCESSFUL"
-        assert successful_submission_mock.mock_calls[1].args[1].total_records == 1
 
     async def test_validate_and_update_warnings(
         self,
         mocker: MockerFixture,
         warning_submission_mock: Mock,
-        df_to_download_mock: Mock,
     ):
         mock_sub = SubmissionDAO(
             id=1,
@@ -121,32 +128,42 @@ class TestSubmissionProcessor:
             state=SubmissionState.SUBMISSION_UPLOADED,
             filename="submission.csv",
         )
+<<<<<<< HEAD
         file_mock = mocker.patch("sbl_filing_api.services.submission_processor.upload_to_storage")
+=======
+>>>>>>> main
         warning_submission_mock.return_value.counter = 3
 
         mock_build_json = mocker.patch("sbl_filing_api.services.submission_processor.build_validation_results")
         mock_build_json.return_value = {"logic_errors": {"total_count": 0}, "logic_warnings": {"total_count": 1}}
 
+        mock_download_formatting = mocker.patch("sbl_filing_api.services.submission_processor.df_to_download")
+        mock_download_formatting.return_value = b"\x01"
+
+        file_mock = mocker.patch("sbl_filing_api.services.submission_processor.upload_to_storage")
+
         await submission_processor.validate_and_update_submission(
             "2024", "123456790", mock_sub, None, {"continue": True}
         )
-        encoded_results = df_to_download_mock.return_value.encode("utf-8")
-        assert file_mock.mock_calls[0].args == (
+
+        file_mock.assert_called_once_with(
             "2024",
             "123456790",
             "3" + submission_processor.REPORT_QUALIFIER,
+<<<<<<< HEAD
             encoded_results,
+=======
+            mock_download_formatting.return_value,
+>>>>>>> main
         )
         assert warning_submission_mock.mock_calls[0].args[1].state == SubmissionState.VALIDATION_IN_PROGRESS
         assert warning_submission_mock.mock_calls[0].args[1].validation_ruleset_version == "0.1.0"
         assert warning_submission_mock.mock_calls[1].args[1].state == SubmissionState.VALIDATION_WITH_WARNINGS
-        assert warning_submission_mock.mock_calls[1].args[1].total_records == 1
 
     async def test_validate_and_update_errors(
         self,
         mocker: MockerFixture,
         error_submission_mock: Mock,
-        df_to_download_mock: Mock,
     ):
         mock_sub = SubmissionDAO(
             id=1,
@@ -156,25 +173,35 @@ class TestSubmissionProcessor:
             filename="submission.csv",
         )
         error_submission_mock.return_value.counter = 4
+<<<<<<< HEAD
+=======
+
+        mock_build_json = mocker.patch("sbl_filing_api.services.submission_processor.build_validation_results")
+        mock_build_json.return_value = {"logic_errors": {"total_count": 1}}
+
+        mock_download_formatting = mocker.patch("sbl_filing_api.services.submission_processor.df_to_download")
+        mock_download_formatting.return_value = b"\x01"
+>>>>>>> main
 
         file_mock = mocker.patch("sbl_filing_api.services.submission_processor.upload_to_storage")
-
-        mocker.patch("sbl_filing_api.services.submission_processor.build_validation_results")
 
         await submission_processor.validate_and_update_submission(
             "2024", "123456790", mock_sub, None, {"continue": True}
         )
-        encoded_results = df_to_download_mock.return_value.encode("utf-8")
-        assert file_mock.mock_calls[0].args == (
+
+        file_mock.assert_called_once_with(
             "2024",
             "123456790",
             "4" + submission_processor.REPORT_QUALIFIER,
+<<<<<<< HEAD
             encoded_results,
+=======
+            mock_download_formatting.return_value,
+>>>>>>> main
         )
         assert error_submission_mock.mock_calls[0].args[1].state == SubmissionState.VALIDATION_IN_PROGRESS
         assert error_submission_mock.mock_calls[0].args[1].validation_ruleset_version == "0.1.0"
         assert error_submission_mock.mock_calls[1].args[1].state == SubmissionState.VALIDATION_WITH_ERRORS
-        assert error_submission_mock.mock_calls[1].args[1].total_records == 1
 
     async def test_validate_and_update_submission_malformed(
         self,
@@ -197,8 +224,9 @@ class TestSubmissionProcessor:
             filename="submission.csv",
         )
 
-        mock_read_csv = mocker.patch("pandas.read_csv")
-        mock_read_csv.side_effect = RuntimeError("File not in csv format")
+        mock_read_csv = mocker.patch("sbl_filing_api.services.submission_processor.validate_batch_csv")
+        re = RuntimeError("File not in csv format")
+        mock_read_csv.side_effect = re
 
         await submission_processor.validate_and_update_submission(
             "2024", "123456790", mock_sub, None, {"continue": True}
@@ -211,8 +239,9 @@ class TestSubmissionProcessor:
         assert mock_update_submission.mock_calls[1].args[1].state == SubmissionState.SUBMISSION_UPLOAD_MALFORMED
 
         mock_read_csv.side_effect = None
-        mock_validation = mocker.patch("sbl_filing_api.services.submission_processor.validate_phases")
-        mock_validation.side_effect = RuntimeError("File can not be parsed by validator")
+        mock_validation = mocker.patch("sbl_filing_api.services.submission_processor.validate_batch_csv")
+        re = RuntimeError("File can not be parsed by validator")
+        mock_validation.side_effect = re
 
         await submission_processor.validate_and_update_submission(
             "2024", "123456790", mock_sub, None, {"continue": True}
@@ -221,7 +250,8 @@ class TestSubmissionProcessor:
         assert mock_update_submission.mock_calls[0].args[1].state == SubmissionState.VALIDATION_IN_PROGRESS
         assert mock_update_submission.mock_calls[1].args[1].state == SubmissionState.SUBMISSION_UPLOAD_MALFORMED
 
-        mock_validation.side_effect = Exception("Test exception")
+        e = Exception("Test exception")
+        mock_validation.side_effect = e
 
         await submission_processor.validate_and_update_submission(
             "2024", "123456790", mock_sub, None, {"continue": True}
@@ -255,6 +285,9 @@ class TestSubmissionProcessor:
             filename="submission.csv",
         )
 
+        mock_build_json = mocker.patch("sbl_filing_api.services.submission_processor.build_validation_results")
+        mock_build_json.return_value = {"logic_errors": {"total_count": 1}}
+
         await submission_processor.validate_and_update_submission(
             "2024", "123456790", mock_sub, None, {"continue": False}
         )
@@ -264,23 +297,11 @@ class TestSubmissionProcessor:
         log_mock.warning.assert_called_with("Submission 1 is expired, will not be updating final state with results.")
 
     async def test_build_validation_results_success(self, mocker: MockerFixture):
-        result = ValidationResults(
-            phase=ValidationPhase.LOGICAL,
-            is_valid=False,
-            error_counts=Counts(
-                single_field_count=0,
-                multi_field_count=0,
-                register_count=0,
-                total_count=0,
-            ),
-            warning_counts=Counts(single_field_count=0, multi_field_count=0, register_count=0, total_count=0),
-            findings=pd.DataFrame(),
-        )
 
         df_to_dicts_mock = mocker.patch("sbl_filing_api.services.submission_processor.df_to_dicts")
         df_to_dicts_mock.return_value = []
 
-        validation_results = submission_processor.build_validation_results(result)
+        validation_results = submission_processor.build_validation_results(pl.DataFrame(), [], ValidationPhase.LOGICAL)
         assert validation_results["syntax_errors"]["single_field_count"] == 0
         assert validation_results["syntax_errors"]["multi_field_count"] == 0
         assert validation_results["syntax_errors"]["register_count"] == 0
@@ -292,18 +313,6 @@ class TestSubmissionProcessor:
         assert validation_results["logic_warnings"]["register_count"] == 0
 
     async def test_build_validation_results_syntax_errors(self, mocker: MockerFixture):
-        result = ValidationResults(
-            phase=ValidationPhase.SYNTACTICAL,
-            is_valid=False,
-            error_counts=Counts(
-                single_field_count=2,
-                multi_field_count=0,
-                register_count=0,
-                total_count=2,
-            ),
-            warning_counts=Counts(single_field_count=0, multi_field_count=0, register_count=0, total_count=0),
-            findings=pd.DataFrame(),
-        )
 
         df_to_dicts_mock = mocker.patch("sbl_filing_api.services.submission_processor.df_to_dicts")
         df_to_dicts_mock.return_value = [
@@ -342,25 +351,28 @@ class TestSubmissionProcessor:
                 ],
             },
         ]
+        findings = pl.DataFrame(
+            {
+                "validation_type": [Severity.ERROR, Severity.ERROR, Severity.WARNING],
+                "scope": ["single-field", "single-field", "multi-field"],
+            }
+        )
+        result_counts = ValidationResults(
+            error_counts=Counts(single_field_count=2),
+            warning_counts=Counts(),
+            is_valid=False,
+            findings=findings,
+            phase=ValidationPhase.SYNTACTICAL,
+        )
 
-        validation_results = submission_processor.build_validation_results(result)
+        validation_results = submission_processor.build_validation_results(
+            findings, [result_counts], ValidationPhase.SYNTACTICAL
+        )
         assert validation_results["syntax_errors"]["single_field_count"] == 2
         assert validation_results["syntax_errors"]["multi_field_count"] == 0
         assert validation_results["syntax_errors"]["register_count"] == 0
 
     def test_build_validation_results_logic_errors(self, mocker: MockerFixture):
-        result = ValidationResults(
-            phase=ValidationPhase.LOGICAL,
-            is_valid=False,
-            error_counts=Counts(
-                single_field_count=0,
-                multi_field_count=0,
-                register_count=2,
-                total_count=2,
-            ),
-            warning_counts=Counts(single_field_count=0, multi_field_count=0, register_count=0, total_count=0),
-            findings=pd.DataFrame(),
-        )
 
         df_to_dicts_mock = mocker.patch("sbl_filing_api.services.submission_processor.df_to_dicts")
         df_to_dicts_mock.return_value = [
@@ -387,25 +399,29 @@ class TestSubmissionProcessor:
                 ],
             },
         ]
+        findings = pl.DataFrame(
+            {
+                "validation_type": [Severity.ERROR, Severity.ERROR, Severity.WARNING],
+                "scope": ["register", "register", "multi-field"],
+            }
+        )
 
-        validation_results = submission_processor.build_validation_results(result)
+        result_counts = ValidationResults(
+            error_counts=Counts(register_count=2),
+            warning_counts=Counts(),
+            is_valid=False,
+            findings=findings,
+            phase=ValidationPhase.LOGICAL,
+        )
+
+        validation_results = submission_processor.build_validation_results(
+            findings, [result_counts], ValidationPhase.LOGICAL
+        )
         assert validation_results["logic_errors"]["single_field_count"] == 0
         assert validation_results["logic_errors"]["multi_field_count"] == 0
         assert validation_results["logic_errors"]["register_count"] == 2
 
     def test_build_validation_results_logic_warnings(self, mocker: MockerFixture):
-        result = ValidationResults(
-            phase=ValidationPhase.LOGICAL,
-            is_valid=False,
-            error_counts=Counts(
-                single_field_count=0,
-                multi_field_count=0,
-                register_count=0,
-                total_count=0,
-            ),
-            warning_counts=Counts(single_field_count=1, multi_field_count=0, register_count=0, total_count=1),
-            findings=pd.DataFrame(),
-        )
 
         df_to_dicts_mock = mocker.patch("sbl_filing_api.services.submission_processor.df_to_dicts")
         df_to_dicts_mock.return_value = [
@@ -428,24 +444,24 @@ class TestSubmissionProcessor:
             },
         ]
 
-        validation_results = submission_processor.build_validation_results(result)
+        findings = pl.DataFrame({"validation_type": [Severity.WARNING], "scope": ["single-field"]})
+
+        result_counts = ValidationResults(
+            error_counts=Counts(),
+            warning_counts=Counts(single_field_count=1),
+            is_valid=False,
+            findings=findings,
+            phase=ValidationPhase.LOGICAL,
+        )
+
+        validation_results = submission_processor.build_validation_results(
+            findings, [result_counts], ValidationPhase.LOGICAL
+        )
         assert validation_results["logic_warnings"]["single_field_count"] == 1
         assert validation_results["logic_warnings"]["multi_field_count"] == 0
         assert validation_results["logic_warnings"]["register_count"] == 0
 
     def test_build_validation_results_logic_warnings_and_errors(self, mocker: MockerFixture):
-        result = ValidationResults(
-            phase=ValidationPhase.LOGICAL,
-            is_valid=False,
-            error_counts=Counts(
-                single_field_count=0,
-                multi_field_count=0,
-                register_count=2,
-                total_count=2,
-            ),
-            warning_counts=Counts(single_field_count=1, multi_field_count=0, register_count=0, total_count=1),
-            findings=pd.DataFrame(),
-        )
 
         df_to_dicts_mock = mocker.patch("sbl_filing_api.services.submission_processor.df_to_dicts")
         df_to_dicts_mock.return_value = [
@@ -490,7 +506,24 @@ class TestSubmissionProcessor:
             },
         ]
 
-        validation_results = submission_processor.build_validation_results(result)
+        findings = pl.DataFrame(
+            {
+                "validation_type": [Severity.ERROR, Severity.ERROR, Severity.WARNING],
+                "scope": ["register", "register", "single-field"],
+            }
+        )
+
+        result_counts = ValidationResults(
+            error_counts=Counts(register_count=2),
+            warning_counts=Counts(single_field_count=1),
+            is_valid=False,
+            findings=findings,
+            phase=ValidationPhase.LOGICAL,
+        )
+
+        validation_results = submission_processor.build_validation_results(
+            findings, [result_counts], ValidationPhase.LOGICAL
+        )
         assert validation_results["logic_warnings"]["single_field_count"] == 1
         assert validation_results["logic_warnings"]["multi_field_count"] == 0
         assert validation_results["logic_warnings"]["register_count"] == 0

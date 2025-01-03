@@ -15,7 +15,7 @@ from fastapi import UploadFile
 # from sbl_filing_api.entities.models.dao import SubmissionDAO, SubmissionState
 # from sbl_filing_api.entities.repos import submission_repo as repo
 from http import HTTPStatus
-from sbl_filing_api.config import settings
+from sbl_filing_api.config import FsProtocol, settings
 from sbl_filing_api.services import file_handler
 from regtech_api_commons.api.exceptions import RegTechHttpException
 
@@ -85,10 +85,15 @@ async def validate_and_update_submission(
             e_start = datetime.now()
             submission.validation_results = build_validation_results(results)
 
-            if results.findings.empty:
+            if all_findings:
+                final_df = pl.concat([v.findings for v in all_findings], how="diagonal")
+
+            submission.validation_results = build_validation_results(final_df, all_findings, final_phase)
+
+            if final_df.is_empty():
                 submission.state = SubmissionState.VALIDATION_SUCCESSFUL
             elif (
-                results.phase == ValidationPhase.SYNTACTICAL
+                final_phase == ValidationPhase.SYNTACTICAL
                 or submission.validation_results["logic_errors"]["total_count"] > 0
             ):
                 submission.state = SubmissionState.VALIDATION_WITH_ERRORS
@@ -96,9 +101,9 @@ async def validate_and_update_submission(
                 submission.state = SubmissionState.VALIDATION_WITH_WARNINGS
 
             submission_report = df_to_download(
-                results.findings,
-                warning_count=results.warning_counts.total_count,
-                error_count=results.error_counts.total_count,
+                final_df,
+                warning_count=sum([r.warning_counts.total_count for r in all_findings]),
+                error_count=sum([r.error_counts.total_count for r in all_findings]),
                 max_errors=settings.max_validation_errors,
             )
             
