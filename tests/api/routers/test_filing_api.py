@@ -1001,7 +1001,7 @@ class TestFilingApi:
         self, mocker: MockerFixture, app_fixture: FastAPI, authed_user_mock: Mock, get_filing_mock: Mock
     ):
         get_filing_mock.return_value.is_voluntary = True
-        get_filing_mock.return_value.state = FilingState.CLOSED
+        get_filing_mock.return_value.state = FilingState.OPEN
         get_filing_mock.return_value.submissions = [
             SubmissionDAO(
                 id=1,
