@@ -88,6 +88,7 @@ class RequestActionValidations(BaseSettings):
         "valid_lei_status",
         "valid_lei_tin",
         "valid_filing_exists_sign",
+        "valid_filing_open",
         "valid_sub_accepted",
         "valid_voluntary_filer",
         "valid_contact_info",

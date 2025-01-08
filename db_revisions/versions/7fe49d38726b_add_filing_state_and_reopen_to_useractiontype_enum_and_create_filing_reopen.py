@@ -28,7 +28,7 @@ filing_state_enum = postgresql.ENUM(
 old_user_action = postgresql.ENUM(
     "SUBMIT",
     "ACCEPT",
-    "SIGNED",
+    "SIGN",
     "CREATE",
     name="useractiontype",
     create_type=False,
@@ -37,7 +37,7 @@ old_user_action = postgresql.ENUM(
 new_user_action = postgresql.ENUM(
     "SUBMIT",
     "ACCEPT",
-    "SIGNED",
+    "SIGN",
     "CREATE",
     "REOPEN",
     name="useractiontype",
@@ -52,6 +52,15 @@ def upgrade() -> None:
         sa.Column("state", filing_state_enum),
     )
 
+    op.create_table(
+        "filing_reopen",
+        sa.Column("user_action", sa.INTEGER, primary_key=True, unique=True, nullable=False),
+        sa.Column("filing", sa.Integer, nullable=False),
+        sa.PrimaryKeyConstraint("user_action", name="filing_reopen_pkey"),
+        sa.ForeignKeyConstraint(["user_action"], ["user_action.id"], name="filing_reopen_user_action_fkey"),
+        sa.ForeignKeyConstraint(["filing"], ["filing.id"], name="filing_reopen_filing_fkey"),
+    )
+
     if "sqlite" not in context.get_context().dialect.name:
         op.execute("ALTER TYPE useractiontype RENAME TO useractiontype_old")
         new_user_action.create(op.get_bind(), checkfirst=True)
@@ -63,6 +72,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_column("filing", "state")
+    op.drop_table("filing_reopen")
     if "sqlite" not in context.get_context().dialect.name:
         op.execute(sa.DDL("DROP TYPE filingstate"))
 

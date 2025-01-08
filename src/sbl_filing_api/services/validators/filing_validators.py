@@ -52,6 +52,15 @@ class ValidContactInfo(ActionValidator):
             return f"Cannot sign filing. Filing for {filing.lei} for period {filing.filing_period} does not have contact info defined."
 
 
+class ValidFilingOpen(ActionValidator):
+    def __init__(self):
+        super().__init__("valid_filing_open")
+
+    def __call__(self, *args, filing: FilingDAO, **kwargs):
+        if filing and filing.state is FilingState.CLOSED:
+            return f"Cannot sign filing. Filing state for {filing.lei} for period {filing.filing_period} is CLOSED."
+
+
 class ValidFilingNotOpen(ActionValidator):
     def __init__(self):
         super().__init__("valid_filing_not_open")
