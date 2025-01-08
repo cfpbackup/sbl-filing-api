@@ -424,7 +424,7 @@ async def update_is_voluntary(request: Request, lei: str, period_code: str, upda
 )
 @requires("authenticated")
 async def reopen_filing(request: Request, lei: str, period_code: str):
-    await repo.add_user_action(
+    reopen = await repo.add_user_action(
         request.state.db_session,
         UserActionDTO(
             user_id=request.user.id,
@@ -434,6 +434,7 @@ async def reopen_filing(request: Request, lei: str, period_code: str):
         ),
     )
     filing = await repo.get_filing(request.state.db_session, lei, period_code)
+    filing.reopens.append(reopen)
     filing.state = FilingState.OPEN
     res = await repo.upsert_filing(request.state.db_session, filing)
     return res
