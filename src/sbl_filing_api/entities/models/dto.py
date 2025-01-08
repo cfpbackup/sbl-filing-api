@@ -96,6 +96,7 @@ class FilingDTO(BaseModel):
     creator: UserActionDTO
     is_voluntary: bool | None = None
     state: FilingState | None = None
+    reopens: List[UserActionDTO] = []
 
 
 class FilingPeriodDTO(BaseModel):

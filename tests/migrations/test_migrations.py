@@ -470,19 +470,24 @@ def test_migrations_to_7fe49d38726b(alembic_runner: MigrationContext, alembic_en
 
     assert "state" in set([c["name"] for c in inspector.get_columns("filing")])
 
-    assert set(["user_action", "filing",]) == set([c["name"] for c in inspector.get_columns("filing_reopen")])
+    assert set(
+        [
+            "user_action",
+            "filing",
+        ]
+    ) == set([c["name"] for c in inspector.get_columns("filing_reopen")])
 
     filing_reopen_fks = inspector.get_foreign_keys("filing_reopen")
     assert filing_reopen_fks[0]["name"] == "filing_reopen_user_action_fkey"
     assert filing_reopen_fks[1]["name"] == "filing_reopen_filing_fkey"
 
     assert (
-            "user_action" in filing_reopen_fks[0]["constrained_columns"]
-            and "user_action" == filing_reopen_fks[0]["referred_table"]
-            and "id" in filing_reopen_fks[0]["referred_columns"]
+        "user_action" in filing_reopen_fks[0]["constrained_columns"]
+        and "user_action" == filing_reopen_fks[0]["referred_table"]
+        and "id" in filing_reopen_fks[0]["referred_columns"]
     )
     assert (
-            "filing" in filing_reopen_fks[1]["constrained_columns"]
-            and "filing" == filing_reopen_fks[1]["referred_table"]
-            and "id" in filing_reopen_fks[1]["referred_columns"]
+        "filing" in filing_reopen_fks[1]["constrained_columns"]
+        and "filing" == filing_reopen_fks[1]["referred_table"]
+        and "id" in filing_reopen_fks[1]["referred_columns"]
     )

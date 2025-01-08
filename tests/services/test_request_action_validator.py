@@ -160,3 +160,15 @@ async def test_invalid_validation(request_mock_invalid_context: Request, log_moc
     run_validations = validate_user_action({"fake_validation"}, "Test Exception")
     await run_validations(request_mock_invalid_context)
     log_mock.warning.assert_called_with("Action validator [%s] not found.", "fake_validation")
+
+
+async def test_valid_filing_state_for_signing(request_mock_invalid_context: Request):
+    run_validations = validate_user_action({"valid_filing_open"}, "Test Exception")
+    await run_validations(request_mock_invalid_context)
+
+
+async def test_invalid_filing_state_for_signing(request_mock_valid_context: Request):
+    run_validations = validate_user_action({"valid_filing_open"}, "Test Exception")
+    with pytest.raises(RegTechHttpException) as e:
+        await run_validations(request_mock_valid_context)
+    assert "Cannot sign filing. Filing state for 1234567890ABCDEFGH00 for period 2024 is CLOSED." in e.value.detail

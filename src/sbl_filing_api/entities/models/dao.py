@@ -121,7 +121,6 @@ class FilingReopenDAO(Base):
     filing: Mapped[int] = mapped_column(ForeignKey("filing.id"), index=True, nullable=False)
 
 
-
 class FilingDAO(Base):
     __tablename__ = "filing"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
