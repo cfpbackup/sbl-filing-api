@@ -1,3 +1,4 @@
 python-keycloak
 httpx
 ujson
+boto3

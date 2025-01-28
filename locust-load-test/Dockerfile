@@ -14,4 +14,4 @@ RUN mkdir /home/locust/sblars
 EXPOSE 8089
 EXPOSE 5557
 
-ENTRYPOINT [ "run_locust.sh" ]
+ENTRYPOINT ["/bin/bash"]

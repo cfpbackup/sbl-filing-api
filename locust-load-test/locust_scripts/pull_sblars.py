@@ -1,5 +1,19 @@
 import httpx
 import os
+import boto3
+import logging
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+logging.basicConfig()
+
+log = logging.getLogger(__name__)
+log.setLevel(logging.INFO)
+
+s3 = boto3.client('s3')
+
+logging.getLogger('botocore.httpchecksum').setLevel(logging.WARNING)
 
 
 def delete_files():
@@ -24,7 +38,8 @@ def pull_files(client, contents, url):
             local_path = os.path.join(sblar_dir, file["name"])
             if not os.path.exists(sblar_dir):
                 os.makedirs(sblar_dir)
-            download_file(client, file["download_url"], local_path)
+            if not os.path.exists(local_path):
+                download_file(client, file["download_url"], local_path)
         elif file["type"] == "dir":
             response = client.get(url)
             response.raise_for_status()
@@ -34,9 +49,29 @@ def pull_files(client, contents, url):
 
 
 def download_files():
-    with httpx.Client() as client:
-        url = os.getenv("SBLAR_REPO", "https://api.github.com/repos/cfpb/sbl-test-data/contents/locust-sblars")
-        response = client.get(url)
-        response.raise_for_status()
-        contents = response.json()
-        pull_files(client, contents, url)
+    log.info("downloading sblars")
+    sblar_dir = os.getenv("SBLAR_LOCATION", "./locust-load-test/sblars")
+    if not os.path.exists(sblar_dir):
+        os.makedirs(sblar_dir)
+    if os.getenv("TEST_FILE_LOCATION", "s3") == "s3":
+        bucket = os.getenv("BUCKET", "")
+        folder = os.getenv("FOLDER", "")
+        response = s3.list_objects_v2(Bucket=bucket, Prefix=folder)
+        for file in response.get("Contents", []):
+            fname: str = file["Key"].split("/")[-1]
+            if fname.endswith(".csv"):
+                local_path = os.path.join(sblar_dir, fname)
+                if not os.path.exists(local_path):
+                    s3.download_file(bucket, file["Key"], local_path)
+        log.info("sblars downloaded from s3")
+    else:
+        with httpx.Client() as client:
+            url = os.getenv("SBLAR_REPO", "https://api.github.com/repos/cfpb/sbl-test-data/contents/locust-sblars")
+            response = client.get(url)
+            response.raise_for_status()
+            contents = response.json()
+            pull_files(client, contents, url)
+        log.info("sblars downloaded from git")
+
+
+download_files()

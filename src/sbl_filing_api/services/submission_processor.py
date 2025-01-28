@@ -1,4 +1,4 @@
-from typing import Generator
+from typing import BinaryIO, Generator
 import polars as pl
 import importlib.metadata as imeta
 import logging
@@ -40,9 +40,9 @@ def validate_file_processable(file: UploadFile) -> None:
         )
 
 
-def upload_to_storage(period_code: str, lei: str, file_identifier: str, content: bytes, extension: str = "csv") -> None:
+def upload_to_storage(period_code: str, lei: str, file_identifier: str, content: BinaryIO, extension: str = "csv") -> None:
     try:
-        file_handler.upload(path=f"upload/{period_code}/{lei}/{file_identifier}.{extension}", content=content)
+        file_handler.upload_file(path=f"upload/{period_code}/{lei}/{file_identifier}.{extension}", content=content)
     except Exception as e:
         raise RegTechHttpException(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR, name="Upload Failure", detail="Failed to upload file"
@@ -51,7 +51,7 @@ def upload_to_storage(period_code: str, lei: str, file_identifier: str, content:
 
 def get_from_storage(period_code: str, lei: str, file_identifier: str, extension: str = "csv") -> Generator:
     try:
-        return file_handler.download(f"upload/{period_code}/{lei}/{file_identifier}.{extension}")
+        return file_handler.download(f"reports/{period_code}/{lei}/{file_identifier}.{extension}")
     except Exception as e:
         raise RegTechHttpException(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR, name="Download Failure", detail="Failed to read file."

@@ -3,13 +3,21 @@ import random
 import logging
 
 from keycloak import KeycloakOpenID, KeycloakOpenIDConnection, KeycloakAdmin
-from pull_sblars import download_files
+# from pull_sblars import download_files
+import pull_sblars
 from leis import get_leis
 
 logger = logging.getLogger(__name__)
 
 COUNT = 0
 
+
+keycloak_openid = KeycloakOpenID(
+    server_url=os.getenv("KC_URL", "http://localhost:8880") + "/auth",
+    client_id=os.getenv("AUTH_CLIENT", "regtech-client"),
+    realm_name=os.getenv("KC_REALM", "regtech"),
+    verify=False,
+)
 
 def startup():
     # Used to generate different users in keycloak based on the number of Users started
@@ -43,21 +51,18 @@ def startup():
                         "type": "password",
                     }
                 ],
-                "groups": [lei],
-            }
+                "groups": leis,
+            },
+            exist_ok=True
         )
     except Exception:
         logger.exception("Error creating user in keycloak.")
 
-    keycloak_openid = KeycloakOpenID(
-        server_url=os.getenv("KC_URL", "http://localhost:8880") + "/auth",
-        client_id=os.getenv("AUTH_CLIENT", "regtech-client"),
-        realm_name=os.getenv("KC_REALM", "regtech"),
-        verify=False,
-    )
+    tokens = keycloak_openid.token(f"locust_test{user_number}", f"locust_test{user_number}")
 
-    token = keycloak_openid.token(f"locust_test{user_number}", f"locust_test{user_number}")["access_token"]
+    # download_files()
 
-    download_files()
+    return user_id, tokens, lei
 
-    return user_id, token, lei
+def refresh_token(token):
+    return keycloak_openid.refresh_token(token)

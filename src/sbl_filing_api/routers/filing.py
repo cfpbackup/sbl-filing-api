@@ -155,7 +155,7 @@ async def sign_filing(request: Request, lei: str, period_code: str):
 @requires("authenticated")
 async def upload_file(request: Request, lei: str, period_code: str, file: UploadFile):
     submission_processor.validate_file_processable(file)
-    content = await file.read()
+    # content = await file.read()
 
     filing = await repo.get_filing(request.state.db_session, lei, period_code)
     if not filing:
@@ -178,13 +178,13 @@ async def upload_file(request: Request, lei: str, period_code: str, file: Upload
         submission = await repo.add_submission(request.state.db_session, filing.id, file.filename, submitter.id)
         try:
             submission_processor.upload_to_storage(
-                period_code, lei, submission.counter, content, file.filename.split(".")[-1]
+                period_code, lei, submission.counter, file.file, file.filename.split(".")[-1]
             )
 
             submission.state = SubmissionState.SUBMISSION_UPLOADED
-            with io.BytesIO(content) as byte_stream:
-                reader = csv.reader(io.TextIOWrapper(byte_stream))
-                submission.total_records = sum(1 for row in reader) - 1
+            # with io.BytesIO(content) as byte_stream:
+            #     reader = csv.reader(io.TextIOWrapper(byte_stream))
+            #     submission.total_records = sum(1 for row in reader) - 1
             submission = await repo.update_submission(request.state.db_session, submission)
         except Exception as e:
             submission.state = SubmissionState.UPLOAD_FAILED
