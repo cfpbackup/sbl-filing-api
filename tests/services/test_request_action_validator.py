@@ -126,7 +126,7 @@ async def test_validations_no_errors(request_mock_valid_context: Request):
         {
             "valid_lei_status",
             "valid_lei_tin",
-            "valid_filing_exists_sign",
+            "valid_filing_exists",
             "valid_sub_accepted",
             "valid_voluntary_filer",
             "valid_contact_info",

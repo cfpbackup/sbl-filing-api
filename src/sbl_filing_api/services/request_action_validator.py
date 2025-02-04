@@ -99,11 +99,19 @@ def validate_user_action(validator_names: Set[str], exception_name: str):
           configurable via `request_validators__` prefixed env vars
     """
 
+    def parse_validation(validation: str):
+        validation_and_msg = validation.split("|")
+        validator_name = validation_and_msg[0]
+        error_msg = validation_and_msg[1] if len(validation_and_msg) > 1 else None
+        return validator_name, error_msg
+
     async def _run_validations(request: Request):
         res = []
         validation_registry = get_validation_registry()
-        for validator_name in validator_names:
+        for validation in validator_names:
+            validator_name, error_msg = parse_validation(validation)
             validator = validation_registry.get(validator_name)
+            request.state.context["error_msg"] = error_msg
             if not validator:
                 log.warning("Action validator [%s] not found.", validator_name)
             elif inspect.iscoroutinefunction(validator.__call__):

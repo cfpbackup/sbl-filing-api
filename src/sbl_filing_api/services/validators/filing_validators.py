@@ -16,22 +16,13 @@ class ValidNoFilingExists(ActionValidator):
             return f"Filing already exists for Filing Period {period_code} and LEI {lei}"
 
 
-class ValidFilingExistsSign(ActionValidator):
+class ValidFilingExists(ActionValidator):
     def __init__(self):
-        super().__init__("valid_filing_exists_sign")
+        super().__init__("valid_filing_exists")
 
-    def __call__(self, filing: FilingDAO, lei: str, period_code: str, **kwargs):
+    def __call__(self, filing: FilingDAO, lei: str, period_code: str, error_msg: str = "sign", **kwargs):
         if not filing:
-            return f"There is no Filing for LEI {lei} in period {period_code}, unable to sign a non-existent Filing."
-
-
-class ValidFilingExistsReopen(ActionValidator):
-    def __init__(self):
-        super().__init__("valid_filing_exists_reopen")
-
-    def __call__(self, filing: FilingDAO, lei: str, period_code: str, **kwargs):
-        if not filing:
-            return f"There is no Filing for LEI {lei} in period {period_code}, unable to reopen a non-existent Filing."
+            return f"There is no Filing for LEI {lei} in period {period_code}, unable to {error_msg} a non-existent Filing."
 
 
 class ValidVoluntaryFiler(ActionValidator):
