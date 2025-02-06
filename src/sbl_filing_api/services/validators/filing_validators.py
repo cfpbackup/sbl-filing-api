@@ -23,7 +23,9 @@ class ValidFilingExists(ActionValidator):
     def __call__(self, filing: FilingDAO, lei: str, period_code: str, error_msg: str, **kwargs):
         modifier = "sign" if error_msg is None else error_msg
         if not filing:
-            return f"There is no Filing for LEI {lei} in period {period_code}, unable to {modifier} a non-existent Filing."
+            return (
+                f"There is no Filing for LEI {lei} in period {period_code}, unable to {modifier} a non-existent Filing."
+            )
 
 
 class ValidVoluntaryFiler(ActionValidator):
